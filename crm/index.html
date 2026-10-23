@@ -1,0 +1,1808 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM de Leads</title>
+<style>
+:root {
+  --bg: #f4f5f8; --panel: #ffffff; --panel-2: #f8f9fb; --sunken: #eef0f4; --line: #e3e6ec; --line-2: #d5d9e1;
+  --text: #171c28; --muted: #636b7c; --faint: #9aa1ae;
+  --accent: #4f46e5; --accent-2: #7c3aed; --accent-weak: #eeedfd; --accent-text: #4338ca;
+  --wa: #1fa855; --bubble-out: #dff5e6; --bubble-in: #ffffff;
+  --warn: #9a5b00; --warn-bg: #fff4de; --danger: #c2410c;
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / .06); --shadow: 0 1px 3px rgb(16 24 40 / .08), 0 4px 14px rgb(16 24 40 / .06);
+  --shadow-lg: 0 12px 40px rgb(16 24 40 / .18);
+  --s-novo: #64748b; --s-contatado: #2563eb; --s-respondeu: #7c3aed; --s-interessado: #c2680c;
+  --s-reuniao: #0e7490; --s-fechado: #16803c; --s-perdido: #c2410c; --s-nao_contatar: #6b7280;
+  --g-pizzaria: #fde4d4; --g-hamburgueria: #fdf0cf; --g-japones: #fbe1e6; --g-marmitaria: #dcf2e2; --g-restaurante: #e3e9fb;
+  --radius: 12px; --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: light dark; /* native scrollbars, date pickers and selects follow the theme */
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1017; --panel: #151922; --panel-2: #1a1f2a; --sunken: #11151d; --line: #262c38; --line-2: #333a48;
+    --text: #e8eaf0; --muted: #9aa3b4; --faint: #6b7385;
+    --accent: #8b85ff; --accent-2: #b48cff; --accent-weak: #232347; --accent-text: #b3aefc;
+    --wa: #3ddc84; --bubble-out: #173323; --bubble-in: #1f2532;
+    --warn: #f5c46b; --warn-bg: #2e2510; --danger: #fb8f5f;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / .4); --shadow: 0 1px 3px rgb(0 0 0 / .4), 0 6px 18px rgb(0 0 0 / .3);
+    --shadow-lg: 0 16px 48px rgb(0 0 0 / .55);
+    --s-novo: #a3adbd; --s-contatado: #7aa2ff; --s-respondeu: #b69cff; --s-interessado: #f5b14a;
+    --s-reuniao: #4fd1e8; --s-fechado: #4ade80; --s-perdido: #fb8f5f; --s-nao_contatar: #9ca3af;
+    --g-pizzaria: #3a2418; --g-hamburgueria: #362c12; --g-japones: #3a1d25; --g-marmitaria: #15301f; --g-restaurante: #1c2540;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font: 14px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+[hidden] { display: none !important; }
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.chips, .stages, .qchips, .kpis { scrollbar-width: none; }
+.chips, .stages, .qchips { mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
+.chips::-webkit-scrollbar, .stages::-webkit-scrollbar, .qchips::-webkit-scrollbar, .kpis::-webkit-scrollbar { display: none; }
+.spacer { flex: 1; }
+
+.app { display: grid; grid-template-rows: auto auto auto 1fr; grid-template-columns: minmax(0, 1fr); height: 100vh; }
+
+/* ── top bar ── */
+.top { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); min-width: 0; }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 15.5px; white-space: nowrap; }
+.logo { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent); }
+.search { position: relative; flex: 0 1 380px; min-width: 120px; margin-left: 8px; }
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+.search input { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); transition: border-color .15s, box-shadow .15s, background .15s; }
+.search input:focus { outline: none; border-color: var(--accent); background: var(--panel); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.search kbd { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font: 11px ui-monospace, monospace; color: var(--faint); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.views { display: flex; background: var(--sunken); border-radius: 10px; padding: 3px; position: relative; }
+.views button { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; border: 0; background: none; padding: 5px 12px; border-radius: 8px; color: var(--muted); font-weight: 600; transition: color .2s; }
+.views button.on { color: var(--text); }
+.views .thumb { position: absolute; top: 3px; bottom: 3px; border-radius: 8px; background: var(--panel); box-shadow: var(--shadow-sm); transition: left .3s var(--ease), width .3s var(--ease); }
+.ibtn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--panel); padding: 7px 11px; border-radius: 10px; white-space: nowrap; transition: background .15s, border-color .15s, transform .1s; }
+.ibtn:hover { background: var(--panel-2); border-color: var(--line-2); }
+.ibtn:active { transform: scale(.97); }
+.ibtn.on { background: var(--warn-bg); border-color: transparent; color: var(--warn); font-weight: 600; }
+.badge { min-width: 19px; height: 19px; padding: 0 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11.5px; font-weight: 700; display: inline-grid; place-items: center; }
+.badge.zero { background: var(--sunken); color: var(--faint); }
+.badge.pulse { animation: pulse 1.8s var(--ease) infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
+
+/* ── KPIs ── */
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 10px; padding: 12px 16px 4px; overflow-x: auto; }
+.kpi { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 10px 13px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: transform .2s var(--ease), box-shadow .2s, border-color .2s; }
+.kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.kpi.on { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+.kpi .lab { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.kpi .val { font-size: 23px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; margin-top: 2px; }
+.kpi .bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--c, var(--accent)); transition: width .8s var(--ease); }
+.kpi .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--accent)); }
+
+/* ── filter chips ── */
+.chips { display: flex; align-items: center; gap: 6px; padding: 10px 16px; overflow-x: auto; min-width: 0; }
+.chips .grp { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin: 0 2px 0 8px; white-space: nowrap; }
+.chips .grp:first-child { margin-left: 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 11px; white-space: nowrap; font-size: 13px; transition: background .15s, border-color .15s, color .15s, transform .1s; }
+.chip:hover { border-color: var(--line-2); }
+.chip:active { transform: scale(.96); }
+.chip .n { color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chip.on { background: var(--accent-weak); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-text); font-weight: 600; }
+.chip.on .n { color: inherit; opacity: .8; }
+.chip select { border: 0; background: none; padding: 0; outline: none; cursor: pointer; }
+.chip.clear { border-style: dashed; color: var(--muted); }
+
+/* ── main area ── */
+main { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(440px, 560px); min-height: 0; min-width: 0; border-top: 1px solid var(--line); }
+.listpane { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.stages { display: flex; gap: 4px; padding: 10px 14px 8px; overflow-x: auto; border-bottom: 1px solid var(--line); }
+.stage { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 5px 10px; border-radius: 8px; color: var(--muted); white-space: nowrap; transition: background .15s, color .15s; }
+.stage:hover { background: var(--sunken); color: var(--text); }
+.stage.on { background: var(--panel); color: var(--text); font-weight: 600; box-shadow: var(--shadow-sm); }
+.stage .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.stage .n { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.listhead { display: flex; align-items: center; gap: 8px; padding: 7px 14px; color: var(--muted); font-size: 12.5px; }
+.listhead select { padding: 3px 6px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); font-size: 12.5px; }
+#rows { overflow: auto; flex: 1; padding: 0 10px 14px; }
+
+.lrow { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 3px 11px; width: 100%; text-align: left; border: 1px solid transparent; background: var(--panel); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 6px; box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .2s, transform .2s var(--ease); }
+.lrow:hover { border-color: var(--line-2); box-shadow: var(--shadow); transform: translateY(-1px); }
+.lrow.sel { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+.lrow .avatar { grid-row: span 3; }
+.lrow .name { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow .meta { grid-column: 2 / 4; color: var(--muted); font-size: 12.5px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.lrow .foot { grid-column: 2 / 4; display: flex; gap: 7px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.enter { animation: enter .38s var(--ease) both; }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } }
+.flash { animation: flash 1s var(--ease); }
+@keyframes flash { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); transform: scale(1.02); } 100% { box-shadow: 0 0 0 12px transparent; } }
+
+.avatar { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: var(--g, var(--sunken)); }
+.avatar.lg { width: 52px; height: 52px; font-size: 27px; border-radius: 15px; }
+.avatar.sm { width: 30px; height: 30px; font-size: 15px; border-radius: 9px; }
+.seg-pizzaria { --g: var(--g-pizzaria); } .seg-hamburgueria { --g: var(--g-hamburgueria); } .seg-japones { --g: var(--g-japones); }
+.seg-marmitaria { --g: var(--g-marmitaria); } .seg-restaurante { --g: var(--g-restaurante); }
+
+.pill { --c: var(--muted); display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 650; color: var(--c); background: color-mix(in srgb, var(--c) 13%, transparent); white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.st-novo { --c: var(--s-novo); } .st-contatado { --c: var(--s-contatado); } .st-respondeu { --c: var(--s-respondeu); }
+.st-interessado { --c: var(--s-interessado); } .st-reuniao { --c: var(--s-reuniao); } .st-fechado { --c: var(--s-fechado); }
+.st-perdido { --c: var(--s-perdido); } .st-nao_contatar { --c: var(--s-nao_contatar); }
+.tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 6px; font-size: 11.5px; background: var(--sunken); color: var(--muted); white-space: nowrap; }
+.tag svg { width: 12px; height: 12px; }
+.tag.hot { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+.tag.web-sem { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent-text); font-weight: 600; }
+.ch { display: inline-flex; gap: 4px; color: var(--faint); }
+.ch svg { width: 14px; height: 14px; }
+.ch .on { color: var(--wa); }
+.ch .on.ig { color: #d6418a; } .ch .on.em { color: var(--accent-text); }
+.dots { display: inline-flex; gap: 2px; }
+.dots i { width: 6px; height: 6px; border-radius: 2px; background: var(--line-2); }
+.dots i.f { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.empty { padding: 50px 20px; text-align: center; color: var(--muted); }
+.empty .big { font-size: 38px; margin-bottom: 6px; }
+.skel { height: 72px; border-radius: var(--radius); margin-bottom: 6px; background: linear-gradient(90deg, var(--panel) 0%, var(--panel-2) 40%, var(--panel) 80%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ── kanban ── */
+.board { display: none; gap: 12px; padding: 14px 16px; overflow: auto; align-items: flex-start; min-height: 0; }
+.col { flex: 0 0 280px; background: var(--sunken); border-radius: 14px; display: flex; flex-direction: column; max-height: 100%; border: 2px solid transparent; transition: border-color .15s, background .15s; }
+.col.over { border-color: var(--c); background: color-mix(in srgb, var(--c) 8%, var(--sunken)); }
+.col-head { display: flex; align-items: center; gap: 8px; padding: 11px 12px 8px; font-weight: 650; }
+.col-head .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.col-head .n { margin-left: auto; font-size: 12px; color: var(--muted); background: var(--panel); border-radius: 999px; padding: 0 8px; font-variant-numeric: tabular-nums; }
+.col-body { overflow: auto; padding: 2px 8px 10px; display: flex; flex-direction: column; gap: 7px; min-height: 60px; }
+.card { text-align: left; border: 1px solid transparent; background: var(--panel); border-radius: 11px; padding: 9px 10px; box-shadow: var(--shadow-sm); display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 3px 9px; transition: box-shadow .2s, transform .2s var(--ease), border-color .15s, opacity .15s; cursor: grab; }
+.card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.card.sel { border-color: var(--accent); }
+.card.dragging { opacity: .4; transform: rotate(2deg) scale(.98); }
+.card .avatar { grid-row: span 2; }
+.card .name { font-weight: 650; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .meta { font-size: 11.5px; color: var(--muted); display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.more { border: 1px dashed var(--line-2); background: none; border-radius: 10px; padding: 7px; color: var(--muted); font-size: 12.5px; }
+.more:hover { background: var(--panel); }
+.col-empty { font-size: 12px; color: var(--faint); text-align: center; padding: 14px 6px; border: 1px dashed var(--line-2); border-radius: 10px; }
+body.view-funil main { grid-template-columns: minmax(0, 1fr); }
+body.view-funil .listpane { display: none; }
+body.view-funil .board { display: flex; }
+
+/* ── detail ── */
+.detail { background: var(--panel); border-left: 1px solid var(--line); overflow: auto; min-width: 0; }
+.d-anim { animation: dIn .32s var(--ease) both; }
+@keyframes dIn { from { opacity: 0; transform: translateX(14px); } }
+.d-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 16px 18px 10px; }
+.d-head h2 { margin: 0; font-size: 18px; line-height: 1.25; letter-spacing: -.01em; }
+.d-head .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.d-close { border: 0; background: var(--sunken); border-radius: 9px; width: 32px; height: 32px; display: none; place-items: center; color: var(--muted); }
+.d-close:hover { color: var(--text); }
+.d-links { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding: 0 18px 12px; }
+.lnk { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; transition: background .15s, border-color .15s; }
+.lnk:hover { background: var(--panel-2); border-color: var(--line-2); }
+.lnk svg { width: 14px; height: 14px; color: var(--muted); }
+
+.stepper { display: flex; padding: 4px 18px 0; gap: 4px; }
+.step { flex: 1; border: 0; background: none; padding: 0 0 4px; text-align: center; font-size: 11.5px; color: var(--faint); transition: color .2s; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step::before { content: ""; display: block; height: 5px; border-radius: 3px; background: var(--line); margin-bottom: 6px; transition: background .35s var(--ease); }
+.step.done::before { background: color-mix(in srgb, var(--c) 55%, transparent); }
+.step.cur::before { background: var(--c); }
+.step.cur { color: var(--text); font-weight: 650; }
+.step.done { color: var(--muted); }
+.step:hover { color: var(--text); }
+.step:hover::before { background: color-mix(in srgb, var(--c) 75%, transparent); }
+.substeps { display: flex; gap: 6px; padding: 6px 18px 0; align-items: center; flex-wrap: wrap; }
+.temps { display: inline-flex; gap: 4px; }
+.temp-b { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; transition: background .15s, border-color .15s, color .15s; }
+.temp-b:hover { border-color: var(--line-2); }
+.temp-b.on { border-color: transparent; font-weight: 650; }
+.temp-b.on.quente { background: #fde2e2; color: #b42318; } .temp-b.on.morno { background: #fdf0d2; color: #93590a; } .temp-b.on.frio { background: #dfeafe; color: #1d4ed8; }
+@media (prefers-color-scheme: dark) { .temp-b.on.quente { background: #3d1a1a; color: #fca5a5; } .temp-b.on.morno { background: #3a2c10; color: #fcd34d; } .temp-b.on.frio { background: #172544; color: #93b4ff; } }
+.ghost { border: 0; background: none; color: var(--muted); font-size: 12.5px; padding: 3px 7px; border-radius: 6px; display: inline-flex; align-items: center; }
+.ghost:hover { background: var(--sunken); color: var(--text); }
+.ghost.on { color: var(--c); font-weight: 650; background: color-mix(in srgb, var(--c) 12%, transparent); }
+
+.next { margin: 12px 18px 4px; padding: 11px 12px; border-radius: 12px; display: flex; align-items: center; gap: 11px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--panel)), color-mix(in srgb, var(--accent-2) 8%, var(--panel)));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); animation: enter .35s var(--ease) both; }
+.next .ico { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--panel); font-size: 16px; box-shadow: var(--shadow-sm); flex-shrink: 0; }
+.next .t { font-weight: 650; font-size: 13.5px; }
+.next .s { font-size: 12.5px; color: var(--muted); }
+.next .btn { margin-left: auto; }
+
+.dtabs { display: flex; gap: 2px; padding: 10px 18px 0; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 2; }
+.dtab { border: 0; background: none; padding: 8px 12px; color: var(--muted); font-weight: 600; position: relative; display: inline-flex; gap: 6px; align-items: center; }
+.dtab::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent); transform: scaleX(0); transition: transform .25s var(--ease); }
+.dtab.on { color: var(--text); }
+.dtab.on::after { transform: scaleX(1); }
+.dtab .n { font-size: 11.5px; background: var(--sunken); border-radius: 999px; padding: 0 7px; color: var(--muted); }
+.pane { padding: 14px 18px 22px; animation: fadeIn .25s ease both; }
+@keyframes fadeIn { from { opacity: 0; } }
+
+.chat { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--sunken); min-height: 90px; max-height: 340px; overflow: auto; margin-bottom: 12px; }
+.bubble { max-width: 86%; padding: 7px 10px 6px; border-radius: 12px; overflow-wrap: anywhere; box-shadow: var(--shadow-sm); font-size: 13.5px; }
+.bubble.out { align-self: flex-end; background: var(--bubble-out); border-bottom-right-radius: 4px; }
+.bubble.in { align-self: flex-start; background: var(--bubble-in); border-bottom-left-radius: 4px; }
+.bubble .txt { white-space: pre-wrap; }
+.bubble .meta { display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--muted); margin-top: 3px; justify-content: flex-end; }
+.bubble .del { border: 0; background: none; color: var(--faint); padding: 0; opacity: 0; transition: opacity .15s; display: inline-flex; }
+.bubble .del svg { width: 13px; height: 13px; }
+.bubble:hover .del, .bubble .del:focus-visible { opacity: 1; }
+.bubble .del:hover { color: var(--danger); }
+.bubble.pop { animation: pop .4s var(--ease) both; }
+@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+.chat-empty { margin: auto; text-align: center; color: var(--muted); font-size: 13px; }
+
+.chans { display: flex; gap: 6px; margin-bottom: 9px; }
+.chan { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 7px 8px; font-weight: 600; color: var(--muted); transition: background .15s, border-color .15s, color .15s, box-shadow .15s; }
+.chan:hover:not(:disabled) { border-color: var(--line-2); color: var(--text); }
+.chan.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 10%, var(--panel)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 13%, transparent); }
+.chan.on svg { color: var(--c); }
+.chan:disabled { opacity: .4; cursor: not-allowed; }
+.chan[data-ch=whatsapp] { --c: var(--wa); } .chan[data-ch=instagram] { --c: #d6418a; } .chan[data-ch=email] { --c: var(--accent); }
+.qchips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 6px; }
+.qchip { border: 1px solid var(--line); background: var(--panel-2); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; white-space: nowrap; transition: border-color .15s, color .15s; }
+.qchip:hover { border-color: var(--accent); color: var(--accent-text); }
+.qchip.first { background: var(--accent-weak); border-color: transparent; color: var(--accent-text); font-weight: 600; }
+.input, .composer textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); transition: border-color .15s, box-shadow .15s; }
+.input:focus, .composer textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+.composer textarea { min-height: 170px; resize: vertical; line-height: 1.5; }
+.composer .subject { margin-bottom: 8px; }
+.row-actions { display: flex; gap: 8px; align-items: center; margin-top: 9px; }
+.btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--panel); padding: 8px 13px; border-radius: 10px; font-weight: 600; white-space: nowrap; transition: background .15s, transform .1s, box-shadow .2s, filter .15s; }
+.btn:hover { background: var(--panel-2); }
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { border-color: transparent; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent); }
+.btn.wa { border-color: transparent; color: #fff; background: var(--wa); box-shadow: 0 4px 14px color-mix(in srgb, var(--wa) 30%, transparent); }
+.btn.ig { border-color: transparent; color: #fff; background: linear-gradient(135deg, #f58529, #dd2a7b 55%, #8134af); }
+.btn.primary:hover, .btn.wa:hover, .btn.ig:hover { filter: brightness(1.06); }
+@media (prefers-color-scheme: dark) { .btn.wa { color: #08140d; } .btn.primary { color: #0d1017; } }
+.btn.sm { padding: 5px 10px; font-size: 12.5px; border-radius: 8px; }
+.hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.hint.warn { color: var(--warn); }
+.reply { margin-top: 14px; border: 1px dashed var(--line-2); border-radius: 12px; transition: border-color .15s; }
+.reply[open] { border-style: solid; border-color: var(--line); }
+.reply summary { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; gap: 8px; align-items: center; font-weight: 600; color: var(--muted); }
+.reply summary::-webkit-details-marker { display: none; }
+.reply summary:hover, .reply[open] summary { color: var(--text); }
+.reply .body { padding: 0 12px 12px; animation: fadeIn .2s ease both; }
+.reply textarea { min-height: 70px; resize: vertical; }
+.reply select { width: auto; padding: 6px 9px; }
+
+.kv { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px 8px; align-items: start; }
+.kv svg { color: var(--faint); margin-top: 2px; }
+.kv a { color: var(--accent-text); }
+.kv .k { font-size: 11.5px; color: var(--muted); }
+.sec-t { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin: 20px 0 8px; }
+.sec-t:first-child { margin-top: 0; }
+.quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.potbox { display: flex; gap: 14px; align-items: center; padding: 10px 12px; background: var(--sunken); border-radius: 10px; }
+.potbox .big { font-size: 22px; font-weight: 700; }
+.potbox .why { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.notes { min-height: 90px; resize: vertical; }
+.placeholder { display: grid; place-items: center; height: 100%; padding: 30px; text-align: center; color: var(--muted); }
+.placeholder .big { font-size: 44px; margin-bottom: 8px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 50% { transform: translateY(-6px); } }
+kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+
+/* drawer mode: kanban view (and narrow screens, below) */
+.scrim { position: fixed; inset: 0; background: rgb(10 12 18 / .45); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 20; }
+body.view-funil .detail { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100vw); z-index: 21; transform: translateX(102%); transition: transform .35s var(--ease); box-shadow: var(--shadow-lg); border-left: 0; }
+body.view-funil.detail-open .detail { transform: none; }
+body.view-funil.detail-open .scrim { opacity: 1; pointer-events: auto; }
+body.view-funil .d-close { display: grid; }
+
+/* dialogs */
+dialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 40px); border: 1px solid var(--line); border-radius: 16px; padding: 0; background: var(--panel); color: var(--text); box-shadow: var(--shadow-lg); }
+dialog[open] { animation: dlgIn .3s var(--ease); }
+@keyframes dlgIn { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+dialog::backdrop { background: rgb(10 12 18 / .5); backdrop-filter: blur(2px); }
+.dlg-head, .dlg-foot { display: flex; align-items: center; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.dlg-foot { border-bottom: 0; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: var(--panel); }
+.dlg-head h2 { margin: 0; font-size: 17px; }
+.dlg-body { padding: 6px 20px 18px; }
+.dlg-body h3 { font-size: 13px; margin: 20px 0 8px; }
+.field { margin-bottom: 10px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+.field textarea { min-height: 110px; resize: vertical; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.vars { font-size: 12px; color: var(--muted); line-height: 1.9; }
+.vars code { background: var(--sunken); border-radius: 5px; padding: 1px 5px; font-size: 11.5px; }
+.qr { display: grid; grid-template-columns: 180px 1fr auto; gap: 8px; margin-bottom: 8px; align-items: start; }
+.qr textarea { min-height: 60px; }
+#welcome { width: min(520px, calc(100vw - 32px)); }
+.welcome { padding: 26px 26px 10px; text-align: center; }
+.welcome .big { font-size: 46px; animation: wave 1.6s ease-in-out 2; display: inline-block; transform-origin: 70% 70%; }
+@keyframes wave { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-8deg); } 60% { transform: rotate(10deg); } }
+.welcome h2 { margin: 8px 0 4px; }
+.welcome p { color: var(--muted); margin: 0 0 16px; }
+.welcome .field { text-align: left; }
+.steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 6px; text-align: left; }
+.steps3 div { background: var(--sunken); border-radius: 10px; padding: 9px; font-size: 12px; color: var(--muted); }
+.steps3 b { display: block; color: var(--text); font-size: 12.5px; margin-bottom: 2px; }
+
+.toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .25s, transform .35s var(--ease); pointer-events: none; z-index: 50; max-width: calc(100vw - 32px); box-shadow: var(--shadow-lg); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.confetti { position: fixed; top: -12px; width: 8px; height: 12px; border-radius: 2px; z-index: 60; pointer-events: none; animation: fall var(--d) cubic-bezier(.25, .6, .4, 1) forwards; }
+@keyframes fall { to { transform: translate(var(--x), 105vh) rotate(var(--r)); opacity: .9; } }
+
+/* online presence */
+.plinks { display: flex; flex-direction: column; gap: 6px; }
+.plink { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 9px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; animation: fadeIn .25s ease both; }
+.plink.parcial { border-style: dashed; background: var(--panel-2); }
+.plink a { color: var(--accent-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.plink a:hover { text-decoration: underline; }
+.plink .src { font-size: 11.5px; color: var(--faint); }
+.plink .acts { display: flex; gap: 4px; }
+.pres-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.pres-add { display: flex; gap: 6px; margin-top: 8px; }
+.tag.off { background: color-mix(in srgb, var(--s-respondeu) 13%, transparent); color: var(--s-respondeu); font-weight: 600; }
+.progress { height: 8px; border-radius: 999px; background: var(--sunken); overflow: hidden; margin: 10px 0 6px; }
+.progress i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .6s var(--ease); }
+.ibtn .run { font-size: 11.5px; color: var(--accent-text); font-weight: 600; }
+/* WhatsApp (official API) */
+.wa-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); transition: background .3s, box-shadow .3s; }
+.wa-dot.on { background: var(--wa); box-shadow: 0 0 0 3px color-mix(in srgb, var(--wa) 25%, transparent); }
+.wa-banner { font-size: 12.5px; padding: 8px 10px; border-radius: 10px; background: var(--sunken); color: var(--muted); margin-bottom: 8px; animation: fadeIn .25s ease both; }
+.wa-banner.open { background: color-mix(in srgb, var(--wa) 12%, var(--panel)); color: var(--text); }
+.wa-banner.off { background: var(--warn-bg); color: var(--warn); }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent-text); font-weight: 600; text-decoration: underline; }
+.tvar { display: grid; grid-template-columns: 40px 200px minmax(0, 1fr); gap: 6px; align-items: center; margin-bottom: 6px; }
+.tvar code { font-size: 12px; color: var(--muted); }
+.tvar .input { padding: 6px 8px; font-size: 13px; }
+.tpl-prev { background: var(--sunken); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; margin-top: 4px; }
+.tpl-prev .bubble { max-width: 100%; align-self: stretch; }
+.tpl-prev .foot { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+.tick { font-size: 11px; letter-spacing: -2px; }
+.tick.read { color: #2f9be0; }
+.tick.failed { color: var(--danger); letter-spacing: 0; font-weight: 600; }
+.bubble .err { color: var(--danger); font-size: 12px; margin-top: 4px; }
+.wa-status { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: var(--sunken); margin: 12px 0; }
+.wa-status.ok { background: color-mix(in srgb, var(--wa) 12%, var(--panel)); }
+.wa-warn { background: var(--warn-bg); color: var(--warn); border-radius: 12px; padding: 10px 12px; font-size: 13px; margin: 12px 0; }
+.steps { margin: 0; padding-left: 20px; font-size: 13px; color: var(--muted); }
+.steps li { margin-bottom: 8px; }
+.steps b, .steps code { color: var(--text); }
+.copyrow { display: flex; gap: 6px; }
+.copyrow .input { font-family: ui-monospace, monospace; font-size: 12.5px; }
+.tpl-list { display: flex; flex-direction: column; gap: 6px; }
+.tpl-item { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.tpl-item .pill { margin-left: auto; }
+.wa-tabs { display: flex; gap: 6px; margin: 12px 0 4px; }
+.wa-tabs button { flex: 1; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 9px; font-weight: 600; color: var(--muted); transition: all .15s; }
+.wa-tabs button.on { color: var(--text); border-color: var(--wa); background: color-mix(in srgb, var(--wa) 10%, var(--panel)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--wa) 13%, transparent); }
+.qr-box { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: center; margin: 14px 0; animation: fadeIn .3s ease both; }
+.qr-box img { width: 280px; height: 280px; background: #fff; padding: 10px; border-radius: 14px; box-shadow: var(--shadow); }
+.spin { width: 18px; height: 18px; border: 2px solid var(--line-2); border-top-color: var(--wa); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 900px) { .qr-box { grid-template-columns: 1fr; justify-items: center; } }
+@media (max-width: 900px) { .tvar { grid-template-columns: 40px minmax(0, 1fr); } .tvar input { grid-column: 1 / -1; } }
+@media (max-width: 1150px) { .kpis { grid-template-columns: repeat(6, 150px); } main { grid-template-columns: minmax(300px, 1fr) minmax(400px, 480px); } }
+/* narrow screens: the detail becomes a full-screen drawer */
+@media (max-width: 900px) {
+  .top { flex-wrap: wrap; }
+  .search { order: 5; flex: 1 1 100%; margin: 0; }
+  .ibtn .lbl, .search kbd { display: none; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  .detail { position: fixed; inset: 0; z-index: 21; transform: translateX(102%); transition: transform .35s var(--ease); border: 0; }
+  body.detail-open .detail { transform: none; }
+  .d-close { display: grid; }
+  .grid2, .qr, .steps3 { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="11" rx="1.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="logo">L</span>CRM de Leads</div>
+    <label class="search"><svg class="i"><use href="#i-search"/></svg>
+      <input id="q" type="search" placeholder="Buscar nome, telefone, endereço…" aria-label="Buscar leads"><kbd>/</kbd></label>
+    <div class="views" role="tablist" aria-label="Visualização">
+      <span class="thumb" id="viewThumb"></span>
+      <button role="tab" data-view="lista" class="on"><svg class="i"><use href="#i-list"/></svg>Lista</button>
+      <button role="tab" data-view="funil"><svg class="i"><use href="#i-board"/></svg>Funil</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="ibtn" id="dueBtn" title="Leads com follow-up para hoje ou atrasado"><svg class="i"><use href="#i-bell"/></svg><span class="lbl">Follow-ups</span><span class="badge zero" id="dueN">0</span></button>
+    <button class="ibtn" id="waBtn" title="Conectar o WhatsApp (API oficial da Meta)"><span class="wa-dot" id="waDot"></span><span class="lbl">WhatsApp</span></button>
+    <button class="ibtn" id="presBtn" title="Conferir na web quem tem site ou cardápio fora do Google Maps"><svg class="i"><use href="#i-globe"/></svg><span class="lbl">Validar sites</span><span class="run" id="presRun"></span></button>
+    <button class="ibtn" id="importBtn" title="Importar um CSV gerado pela skill (junta sem duplicar)"><svg class="i"><use href="#i-upload"/></svg><span class="lbl">Importar</span></button>
+    <button class="ibtn" id="exportBtn" title="Exportar a lista filtrada (Excel)"><svg class="i"><use href="#i-download"/></svg><span class="lbl">Exportar</span></button>
+    <button class="ibtn" id="settingsBtn" title="Seu perfil e modelos de mensagem"><svg class="i"><use href="#i-sliders"/></svg><span class="lbl">Modelos</span></button>
+    <input type="file" id="fileIn" accept=".csv,text/csv" hidden>
+  </header>
+  <section class="kpis" id="kpis" aria-label="Resumo do funil"></section>
+  <section class="chips" id="chips" aria-label="Filtros"></section>
+  <main>
+    <section class="listpane" aria-label="Lista de leads">
+      <nav class="stages" id="stages" aria-label="Etapas"></nav>
+      <div class="listhead"><span id="count"></span><span class="spacer"></span>
+        <label for="sort">Ordenar por</label>
+        <select id="sort">
+          <option value="potencial">Potencial</option><option value="avaliacoes">Mais avaliações</option>
+          <option value="nota">Melhor nota</option><option value="atividade">Atividade recente</option>
+          <option value="followup">Próximo follow-up</option><option value="nome">Nome (A–Z)</option>
+        </select></div>
+      <div id="rows"></div>
+    </section>
+    <section class="board" id="board" aria-label="Funil"></section>
+    <aside class="detail" id="detail" aria-label="Lead selecionado">
+      <div class="placeholder"><div><div class="big">👈</div>Escolha um lead para ver os dados,<br>qualificar e enviar a mensagem.<br><br><span style="font-size:12px">Atalhos: <kbd>↑</kbd> <kbd>↓</kbd> navegar · <kbd>/</kbd> buscar · <kbd>Esc</kbd> fechar</span></div></div>
+    </aside>
+  </main>
+</div>
+<div class="scrim" id="scrim"></div>
+
+<dialog id="settings">
+  <form method="dialog">
+    <div class="dlg-head"><h2>Perfil e modelos de mensagem</h2><span class="spacer"></span><button class="ghost" value="cancel" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="dlg-body" id="settingsBody"></div>
+    <div class="dlg-foot">
+      <button class="btn sm" type="button" id="resetCfg">Restaurar padrão</button>
+      <span class="spacer"></span>
+      <button class="btn" value="cancel">Cancelar</button>
+      <button class="btn primary" type="button" id="saveCfg">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="presDlg">
+  <div class="dlg-head"><h2>Validar presença online</h2><span class="spacer"></span><button class="ghost" id="presClose" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-body" id="presBody"></div>
+</dialog>
+
+<dialog id="waDlg">
+  <div class="dlg-head"><h2>Conectar WhatsApp</h2><span class="spacer"></span><button class="ghost" id="waClose" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-body" id="waBody"></div>
+</dialog>
+
+<dialog id="welcome">
+  <div class="welcome">
+    <div class="big">👋</div>
+    <h2>Bem-vindo ao seu CRM</h2>
+    <p>Seus leads já estão aqui. Como você quer se apresentar nas mensagens?</p>
+    <div class="grid2">
+      <div class="field"><label for="wNome">Seu nome</label><input class="input" id="wNome" placeholder="Ex.: Ana"></div>
+      <div class="field"><label for="wEmpresa">Empresa (opcional)</label><input class="input" id="wEmpresa" placeholder="Ex.: Agência X"></div>
+    </div>
+    <div class="steps3">
+      <div><b>1. Escolha</b>Filtre por quem não tem site e comece pelos de maior potencial.</div>
+      <div><b>2. Envie</b>A mensagem já vem pronta. Um clique abre o WhatsApp.</div>
+      <div><b>3. Acompanhe</b>Cole a resposta, avance a etapa e faça o follow-up.</div>
+    </div>
+  </div>
+  <div class="dlg-foot"><button class="btn" id="wSkip">Agora não</button><span class="spacer"></span><button class="btn primary" id="wSave">Começar</button></div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const STATUS = [
+  ['novo', 'Novo'], ['contatado', 'Contatado'], ['respondeu', 'Respondeu'], ['interessado', 'Interessado'],
+  ['reuniao', 'Reunião'], ['fechado', 'Fechado'], ['perdido', 'Perdido'], ['nao_contatar', 'Não contatar'],
+];
+const STATUS_LABEL = Object.fromEntries(STATUS);
+const FLOW = ['novo', 'contatado', 'respondeu', 'interessado', 'reuniao', 'fechado'];
+const CLOSED = new Set(['fechado', 'perdido', 'nao_contatar']);
+const TEMPS = [['quente', '🔥', 'Quente'], ['morno', '🌤️', 'Morno'], ['frio', '❄️', 'Frio']];
+const TEMP_ICON = Object.fromEntries(TEMPS.map(([k, i]) => [k, i]));
+const TIPO = { sem_site: 'Sem site', so_rede_social: 'Só rede social', com_site: 'Com site' };
+const PLAT = { instagram: 'Instagram', linktree: 'Linktree', ifood: 'iFood', facebook: 'Facebook',
+  whatsapp: 'WhatsApp', cardapio: 'cardápio digital', tiktok: 'TikTok' };
+const SEG = { pizzaria: 'Pizzaria', hamburgueria: 'Hamburgueria', japones: 'Japonês', marmitaria: 'Marmitaria', restaurante: 'Restaurante' };
+const SEG_ICON = { pizzaria: '🍕', hamburgueria: '🍔', japones: '🍣', marmitaria: '🍱', restaurante: '🍽️' };
+const SEG_RULES = [
+  ['pizzaria', /pizz/],
+  ['japones', /japon|sushi|temak|oriental|poke|asiat|yakisoba/],
+  ['hamburgueria', /hamburg|burg|lanch|smash|sanduich/],
+  ['marmitaria', /marmit|self.?service|caseir|brasileir|quilo|mineir|prato feito|almoco/],
+];
+const CHANNEL = { whatsapp: 'WhatsApp', email: 'E-mail', instagram: 'Instagram', telefone: 'Telefone', outro: 'Outro' };
+
+// Default copy assumes the offer is a website / online menu (the list was split by web presence).
+// Everything is editable in "Modelos" and saved in the local database.
+const DEFAULTS = {
+  onboarded: false,
+  waMap: {}, // template name -> source of each variable
+  perfil: { nome: '', empresa: '' },
+  templates: {
+    sem_site: '{saudacao}, tudo bem? {apresentacao}\n\nEncontrei a {nome} no Google Maps aqui em {cidade}{elogio} e vi que vocês ainda não têm um site.\n\n{gancho}\n\nPosso te mandar um exemplo de como ficaria para a {nome}? É rapidinho e sem compromisso.',
+    so_rede_social: '{saudacao}, tudo bem? {apresentacao}\n\nVi a {nome} no Google Maps{elogio} e reparei que quem clica em "site" vai direto para o {plataforma}. Funciona, mas dá para ter uma página própria com cardápio, horário e pedido direto no WhatsApp, e o {plataforma} continua junto.\n\n{gancho}\n\nPosso te mostrar um exemplo?',
+    com_site: '{saudacao}, tudo bem? {apresentacao}\n\nVi a {nome} no Google Maps{elogio} e dei uma olhada no site de vocês.\n\n{gancho}\n\nTenho algumas ideias para trazer mais pedidos direto pelo site. Posso te mandar?',
+    fora_do_google: '{saudacao}, tudo bem? {apresentacao}\n\nEncontrei a {nome} no Google Maps aqui em {cidade}{elogio}. Vi que vocês já têm cardápio no {plataforma}, mas ele não aparece no perfil do Google: quem acha vocês por lá não encontra onde pedir.\n\n{gancho}\n\nPosso te mostrar como ficaria uma página própria, ligada ao Google?',
+    assunto: 'Uma ideia para a {nome}',
+  },
+  ganchos: {
+    pizzaria: 'Para pizzaria, um cardápio online com pedido direto no WhatsApp costuma fazer muita diferença: o cliente escolhe sabor, meia a meia e borda, e o pedido chega pronto, sem comissão de aplicativo.',
+    hamburgueria: 'Para hamburgueria, um cardápio digital com fotos dos lanches e pedido direto no WhatsApp ajuda a vender mais combos e adicionais, sem pagar comissão de app.',
+    japones: 'Para comida japonesa, mostrar os combos e o rodízio com boas fotos num cardápio online ajuda muito o cliente a escolher, e o pedido chega direto no WhatsApp.',
+    marmitaria: 'Para marmitaria, dá para ter uma página com o cardápio do dia, atualizado em 1 minuto, e o cliente pede a marmita direto no WhatsApp.',
+    restaurante: 'Um site simples com cardápio, horários, localização e botão de WhatsApp ajuda o restaurante a aparecer melhor no Google e a converter quem está procurando onde comer.',
+  },
+  respostas: [
+    { titulo: 'Quanto custa?', texto: 'Depende do que fizer mais sentido para a {nome}, mas tenho opções bem acessíveis. Posso te mostrar um exemplo primeiro e aí te passo os valores certinhos?' },
+    { titulo: 'Manda mais informações', texto: 'Claro! Vou te mandar um exemplo de como ficaria para a {nome}. Qual o melhor horário para uma ligação rápida de 5 minutos?' },
+    { titulo: 'Já tenho iFood / Instagram', texto: 'Entendi! A ideia não é substituir o que vocês já usam, é ter um canal próprio onde você não paga comissão por pedido. Posso te mostrar como funcionaria junto?' },
+    { titulo: 'Agendar conversa', texto: 'Ótimo! Que dia e horário ficam bons para você essa semana?' },
+    { titulo: 'Follow-up', texto: '{saudacao}! Passando só para saber se você conseguiu ver minha mensagem sobre a {nome}. 🙂' },
+    { titulo: 'Sem interesse', texto: 'Sem problema, obrigado pelo retorno! Não vou mais te incomodar. Se mudar de ideia, é só chamar. Sucesso para a {nome}!' },
+  ],
+};
+
+const S = {
+  leads: [], byId: new Map(), msgs: [], cfg: structuredClone(DEFAULTS), sel: null, channel: 'whatsapp',
+  view: 'lista', tab: 'conversa', boardLimit: {}, flash: null,
+  wa: { cfg: { configured: false }, web: { status: 'not_installed' }, templates: [], tplErr: '' }, waTab: 'web', tplSel: '', seq: null, unread: 0,
+  f: { q: '', status: 'todos', tipos: new Set(), city: '', segs: new Set(), temp: '', ch: new Set(), due: false, sort: 'potencial' },
+};
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const icon = id => `<svg class="i"><use href="#i-${id}"/></svg>`;
+const fmtNota = r => r ? Number(r).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '';
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const today = () => ymd(new Date());
+const addDays = n => { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); };
+const fmtDate = s => s ? s.slice(8, 10) + '/' + s.slice(5, 7) : '';
+const fmtTs = s => s ? `${s.slice(8, 10)}/${s.slice(5, 7)} ${s.slice(11, 16)}` : '';
+const isDue = l => l.follow_up && l.follow_up <= today() && !CLOSED.has(l.status);
+const platLabel = l => l.platform_name || PLAT[l.platform] || 'rede social';
+const presence = l => l.site_type === 'so_rede_social' ? `Só ${platLabel(l)}` : TIPO[l.site_type] || '—';
+
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+  return data;
+}
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), Math.max(3200, msg.length * 55));
+}
+const fail = e => toast('Erro: ' + e.message + '. O CRM (janela preta) está aberto?');
+
+function confetti() {
+  if (REDUCED) return;
+  const colors = ['#4f46e5', '#7c3aed', '#16a34a', '#f59e0b', '#ec4899', '#06b6d4'];
+  for (let i = 0; i < 70; i++) {
+    const c = document.createElement('i');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.setProperty('--x', (Math.random() * 200 - 100) + 'px');
+    c.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg');
+    c.style.setProperty('--d', (1.4 + Math.random() * 1.4) + 's');
+    c.style.animationDelay = Math.random() * .25 + 's';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+function countUp(el, to, suffix = '') {
+  const from = Number(el.dataset.v || 0);
+  el.dataset.v = to;
+  if (REDUCED || from === to) { el.textContent = to + suffix; return; }
+  const t0 = performance.now(), dur = 650;
+  const step = t => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = Math.round(from + (to - from) * e) + suffix;
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// ── lead enrichment (derived, never stored) ──
+function segOf(l) {
+  for (const src of [norm(l.category), norm(l.title)])
+    for (const [k, re] of SEG_RULES) if (re.test(src)) return k;
+  return 'restaurante';
+}
+function phoneInfo(p) {
+  let d = String(p || '').replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('55') && d.length >= 12) d = d.slice(2);
+  d = d.replace(/^0+/, '');
+  if (d.length < 10 || d.length > 11) return { wa: '', mobile: false };
+  const local = d.slice(2);
+  return { wa: '55' + d, mobile: local.length === 9 && local[0] === '9' };
+}
+function igUser(u) {
+  const m = String(u || '').match(/instagram\.com\/([A-Za-z0-9._]+)/i);
+  if (!m || ['p', 'reel', 'reels', 'explore', 'stories', 'accounts'].includes(m[1].toLowerCase())) return '';
+  return m[1];
+}
+function potencial(l) {
+  let p = 0;
+  if (l.site_type !== 'com_site') p += 2;
+  if (l.ph?.mobile) p += 1;
+  if ((l.reviews || 0) >= 50) p += 1;
+  if ((l.reviews || 0) >= 300) p += 1;
+  return p;
+}
+function prep(l) {
+  l.seg = segOf(l);
+  l.ph = phoneInfo(l.phone);
+  l.ig = igUser(l.instagram) || (l.platform === 'instagram' ? igUser(l.website) : '');
+  l.email1 = String(l.emails || '').split(',')[0].trim();
+  l.pot = potencial(l);
+  l.search = norm([l.title, l.category, l.address, l.city, l.phone, l.emails, l.notes].join(' '));
+  return l;
+}
+function upsert(l) {
+  prep(l);
+  const i = S.leads.findIndex(x => x.id === l.id);
+  if (i >= 0) S.leads[i] = l; else S.leads.push(l);
+  S.byId.set(l.id, l);
+  return l;
+}
+
+// ── message templates ──
+function vars(l) {
+  const h = new Date().getHours(), p = S.cfg.perfil, n = l.reviews || 0;
+  const elogio = l.rating >= 4.5 && n >= 30 ? ` (nota ${fmtNota(l.rating)} com ${n} avaliações, parabéns!)`
+    : l.rating >= 4 && n >= 10 ? ` (vi as ${n} avaliações, muito boas!)` : '';
+  const apresentacao = p.nome && p.empresa ? `Meu nome é ${p.nome}, da ${p.empresa}.`
+    : p.nome ? `Meu nome é ${p.nome}.` : p.empresa ? `Falo da ${p.empresa}.` : '';
+  return {
+    saudacao: h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite',
+    nome: l.title, cidade: l.city, segmento: SEG[l.seg].toLowerCase(), gancho: S.cfg.ganchos[l.seg] || '',
+    elogio, plataforma: l.platform_name || PLAT[l.platform] || 'Instagram', nota: fmtNota(l.rating), avaliacoes: n,
+    meu_nome: p.nome, minha_empresa: p.empresa, apresentacao,
+  };
+}
+function fill(t, v) {
+  return String(t || '').replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m))
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+// Found outside Google (a WhatsMenu nobody on Maps can see) deserves its own pitch.
+const templateKey = l => l.off_google && l.site_type === 'so_rede_social' ? 'fora_do_google' : l.site_type;
+const firstMessage = l => fill(S.cfg.templates[templateKey(l)] || S.cfg.templates.com_site, vars(l));
+
+// ── filtering ──
+function visible(ignoreStatus) {
+  const f = S.f, q = norm(f.q).trim();
+  const out = S.leads.filter(l =>
+    (ignoreStatus || f.status === 'todos' || l.status === f.status) && (!f.due || isDue(l)) &&
+    (!f.tipos.size || f.tipos.has(l.site_type)) && (!f.city || l.city === f.city) &&
+    (!f.segs.size || f.segs.has(l.seg)) && (!f.temp || l.temperature === f.temp) &&
+    (!f.ch.has('wa') || l.ph?.mobile) && (!f.ch.has('email') || l.email1) && (!f.ch.has('ig') || l.ig) &&
+    (!q || l.search.includes(q)));
+  const by = {
+    potencial: (a, b) => b.pot - a.pot || (b.reviews || 0) - (a.reviews || 0),
+    avaliacoes: (a, b) => (b.reviews || 0) - (a.reviews || 0),
+    nota: (a, b) => (b.rating || 0) - (a.rating || 0) || (b.reviews || 0) - (a.reviews || 0),
+    atividade: (a, b) => String(b.last_msg || b.updated_at).localeCompare(String(a.last_msg || a.updated_at)),
+    followup: (a, b) => (a.follow_up || '9999').localeCompare(b.follow_up || '9999'),
+    nome: (a, b) => a.title.localeCompare(b.title, 'pt-BR'),
+  }[f.sort];
+  return out.sort(by);
+}
+const anyFilter = () => S.f.q || S.f.tipos.size || S.f.city || S.f.segs.size || S.f.temp || S.f.ch.size || S.f.due;
+
+// ── header widgets ──
+function renderKpis() {
+  const L = S.leads, n = L.length || 1;
+  const reached = L.filter(l => l.msg_count > 0 || !['novo', 'nao_contatar'].includes(l.status)).length;
+  const replied = L.filter(l => l.msg_in > 0 || ['respondeu', 'interessado', 'reuniao', 'fechado'].includes(l.status)).length;
+  const fresh = L.filter(l => l.status === 'novo').length;
+  const hot = L.filter(l => ['interessado', 'reuniao'].includes(l.status)).length;
+  const won = L.filter(l => l.status === 'fechado').length;
+  const rate = reached ? Math.round(100 * replied / reached) : 0;
+  const items = [ // [stage filter, label, value, suffix, bar %, color]
+    ['todos', 'Leads', L.length, '', 100, 'var(--accent)'],
+    ['novo', 'A contatar', fresh, '', 100 * fresh / n, 'var(--s-novo)'],
+    ['contatado', 'Contatados', reached, '', 100 * reached / n, 'var(--s-contatado)'],
+    ['respondeu', 'Taxa de resposta', rate, '%', rate, 'var(--s-respondeu)'],
+    ['interessado', 'Interessados', hot, '', 100 * hot / n, 'var(--s-interessado)'],
+    ['fechado', 'Fechados', won, '', 100 * won / n, 'var(--s-fechado)'],
+  ];
+  const box = $('#kpis');
+  if (!box.children.length) box.innerHTML = items.map(([k, lab]) =>
+    `<button class="kpi" data-status="${k}" title="Filtrar"><div class="lab"><span class="dot"></span>${lab}</div><div class="val" data-v="0">0</div><div class="bar"></div></button>`).join('');
+  items.forEach(([k, , v, suf, pct, c], i) => {
+    const el = box.children[i];
+    el.style.setProperty('--c', c);
+    el.classList.toggle('on', S.view === 'lista' && S.f.status === k && k !== 'todos');
+    countUp($('.val', el), v, suf);
+    requestAnimationFrame(() => { $('.bar', el).style.width = Math.max(0, Math.min(100, pct)) + '%'; });
+  });
+  const due = L.filter(isDue).length, b = $('#dueN');
+  b.textContent = due;
+  b.classList.toggle('zero', !due);
+  b.classList.toggle('pulse', due > 0 && !S.f.due);
+  $('#dueBtn').classList.toggle('on', S.f.due);
+}
+
+function renderChips() {
+  const f = S.f, cnt = fn => S.leads.filter(fn).length;
+  const cities = [...new Set(S.leads.map(l => l.city).filter(Boolean))].sort();
+  const chip = (attr, val, label, n, on) => `<button class="chip ${on ? 'on' : ''}" data-${attr}="${val}" aria-pressed="${on}">${label}${n != null ? `<span class="n">${n}</span>` : ''}</button>`;
+  $('#chips').innerHTML = `
+    <span class="grp">Presença</span>
+    ${Object.entries(TIPO).map(([k, lab]) => chip('tipo', k, lab, cnt(l => l.site_type === k), f.tipos.has(k))).join('')}
+    <span class="grp">Segmento</span>
+    ${Object.entries(SEG).map(([k, lab]) => chip('seg', k, `${SEG_ICON[k]} ${lab}`, cnt(l => l.seg === k), f.segs.has(k))).join('')}
+    <span class="grp">Canal</span>
+    ${chip('ch', 'wa', `${icon('wa')} WhatsApp`, cnt(l => l.ph?.mobile), f.ch.has('wa'))}
+    ${chip('ch', 'ig', `${icon('ig')} Instagram`, cnt(l => l.ig), f.ch.has('ig'))}
+    ${chip('ch', 'email', `${icon('mail')} E-mail`, cnt(l => l.email1), f.ch.has('email'))}
+    <span class="grp">Mais</span>
+    <label class="chip ${f.city ? 'on' : ''}">${icon('pin')}<select id="fcity" aria-label="Cidade"><option value="">Todas as cidades</option>${cities.map(c => `<option ${f.city === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+    ${TEMPS.map(([k, ic, lab]) => chip('temp', k, `${ic} ${lab}`, null, f.temp === k)).join('')}
+    ${anyFilter() ? `<button class="chip clear" id="clearF">${icon('x')} Limpar filtros</button>` : ''}`;
+}
+
+function renderStages() {
+  const base = visible(true), c = { todos: base.length };
+  for (const l of base) c[l.status] = (c[l.status] || 0) + 1;
+  $('#stages').innerHTML = [['todos', 'Todos'], ...STATUS].map(([k, lab]) =>
+    `<button class="stage ${S.f.status === k ? 'on' : ''} ${k === 'todos' ? '' : 'st-' + k}" data-status="${k}">${k === 'todos' ? '' : '<span class="dot"></span>'}${lab}<span class="n">${c[k] || 0}</span></button>`).join('');
+}
+
+// ── list view ──
+const dots = n => `<span class="dots" title="Potencial ${n}/5">${[0, 1, 2, 3, 4].map(i => `<i class="${i < n ? 'f' : ''}"></i>`).join('')}</span>`;
+const chans = l => `<span class="ch">${l.ph?.wa ? `<span class="${l.ph.mobile ? 'on' : ''}" title="${l.ph.mobile ? 'Celular / WhatsApp' : 'Telefone fixo'}">${icon(l.ph.mobile ? 'wa' : 'phone')}</span>` : ''}${l.ig ? `<span class="on ig" title="Instagram">${icon('ig')}</span>` : ''}${l.email1 ? `<span class="on em" title="E-mail">${icon('mail')}</span>` : ''}</span>`;
+const webTag = l => `<span class="tag ${l.site_type === 'com_site' ? '' : 'web-sem'}">${presence(l)}</span>`;
+const fuTag = l => l.follow_up && !CLOSED.has(l.status) ? `<span class="tag ${isDue(l) ? 'hot' : ''}" title="Follow-up">${icon('cal')} ${fmtDate(l.follow_up)}</span>` : '';
+
+function rowHtml(l, i = -1) {
+  const anim = i >= 0 && i < 24;
+  return `<button class="lrow ${S.sel === l.id ? 'sel' : ''} ${anim ? 'enter' : ''} ${S.flash === l.id ? 'flash' : ''}" data-id="${l.id}" ${anim ? `style="animation-delay:${i * 22}ms"` : ''}>
+    <span class="avatar seg-${l.seg}">${SEG_ICON[l.seg]}</span>
+    <span class="name">${esc(l.title)}</span>
+    <span class="pill st-${l.status}">${STATUS_LABEL[l.status]}</span>
+    <span class="meta">${SEG[l.seg]} · ${esc(l.city)}${l.rating ? ` · ★ ${fmtNota(l.rating)} <span style="color:var(--faint)">(${l.reviews || 0})</span>` : ''}</span>
+    <span class="foot">${webTag(l)} ${dots(l.pot)} ${chans(l)}
+      ${l.temperature ? `<span title="${l.temperature}">${TEMP_ICON[l.temperature]}</span>` : ''}
+      ${l.msg_count ? `<span>💬 ${l.msg_count}${l.msg_in ? ` · ${l.msg_in} resp.` : ''}</span>` : ''}
+      ${l.off_google ? '<span class="tag off" title="Encontrado na web; o Google Maps não mostra esse link">🔎 fora do Google</span>' : ''}
+      ${fuTag(l)}</span>
+  </button>`;
+}
+function renderList(animate = true) {
+  const v = visible();
+  S.visible = v;
+  $('#count').textContent = `${v.length} lead${v.length === 1 ? '' : 's'}`;
+  $('#rows').innerHTML = v.length ? v.map((l, i) => rowHtml(l, animate ? i : -1)).join('')
+    : `<div class="empty"><div class="big">🔍</div>Nenhum lead com esses filtros.<br><button class="btn sm" style="margin-top:10px" id="clearF2">Limpar filtros</button></div>`;
+}
+
+// ── kanban view ──
+function cardHtml(l) {
+  return `<div class="card ${S.sel === l.id ? 'sel' : ''} ${S.flash === l.id ? 'flash' : ''}" draggable="true" data-id="${l.id}" tabindex="0" role="button" aria-label="${esc(l.title)}">
+    <span class="avatar sm seg-${l.seg}">${SEG_ICON[l.seg]}</span>
+    <span class="name">${esc(l.title)}</span>
+    <span class="meta">${esc(l.city)}${l.rating ? ` · ★ ${fmtNota(l.rating)}` : ''} ${dots(l.pot)} ${chans(l)}
+      ${l.temperature ? TEMP_ICON[l.temperature] : ''} ${fuTag(l)}</span>
+  </div>`;
+}
+function renderBoard() {
+  const v = visible(true);
+  S.visible = v;
+  $('#board').innerHTML = STATUS.map(([k, lab]) => {
+    const items = v.filter(l => l.status === k), lim = S.boardLimit[k] || 30;
+    return `<div class="col st-${k}" data-col="${k}">
+      <div class="col-head"><span class="dot"></span>${lab}<span class="n">${items.length}</span></div>
+      <div class="col-body">${items.slice(0, lim).map(cardHtml).join('') || '<div class="col-empty">Arraste um lead para cá</div>'}
+        ${items.length > lim ? `<button class="more" data-more="${k}">Mostrar mais (${items.length - lim} restantes)</button>` : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMain(animate = true) {
+  renderKpis(); renderChips();
+  if (S.view === 'lista') { renderStages(); renderList(animate); } else renderBoard();
+}
+// In-place refresh after a lead changes, without re-animating the whole list.
+function refreshLead(l) {
+  const row = $(`.lrow[data-id="${l.id}"]`);
+  if (row) row.outerHTML = rowHtml(l);
+  if (S.view === 'funil') renderBoard(); else renderStages();
+  renderKpis(); renderChips();
+  if (S.sel === l.id) { renderTop(); if (S.tab === 'detalhes') renderPresence(l); }
+}
+
+// ── detail ──
+async function select(id) {
+  const changed = S.sel !== id;
+  S.sel = id;
+  history.replaceState(null, '', '#lead=' + id);
+  $$('.lrow.sel, .card.sel').forEach(r => r.classList.remove('sel'));
+  const el = $(`.lrow[data-id="${id}"], .card[data-id="${id}"]`);
+  if (el) { el.classList.add('sel'); el.scrollIntoView({ block: 'nearest', behavior: REDUCED ? 'auto' : 'smooth' }); }
+  document.body.classList.add('detail-open');
+  const l = S.byId.get(id);
+  if (changed) {
+    S.channel = l.ph?.wa ? 'whatsapp' : l.ig ? 'instagram' : l.email1 ? 'email' : 'whatsapp';
+    S.tab = 'conversa';
+    S.tplSel = '';
+    S.msgs = [];
+  }
+  renderDetail();
+  try { S.msgs = await api('GET', `/api/leads/${id}/messages`); } catch (e) { return fail(e); }
+  if (S.sel === id) { renderTimeline(); updateTabCount(); }
+}
+function closeDetail() {
+  document.body.classList.remove('detail-open');
+  history.replaceState(null, '', location.pathname);
+}
+
+// [icon, title, subtitle, button label, action]
+function nextStep(l) {
+  if (l.status === 'novo') return ['✉️', 'Envie a primeira mensagem', 'Ela já está pronta e personalizada para este lead.', 'Ir para a mensagem', 'compose'];
+  if (l.status === 'contatado') return isDue(l)
+    ? ['⏰', 'Hora do follow-up', 'O lead ainda não respondeu. Mande um lembrete leve.', 'Usar follow-up', 'followup']
+    : ['⏳', 'Aguardando resposta', l.follow_up ? `Follow-up marcado para ${fmtDate(l.follow_up)}.` : 'Marque um follow-up na aba Detalhes.', 'Ele respondeu', 'reply'];
+  if (l.status === 'respondeu') return ['💬', 'O lead respondeu!', 'Responda com uma resposta pronta e qualifique.', 'Marcar interessado', 'interessado'];
+  if (l.status === 'interessado') return ['📅', 'Agende uma conversa', 'Proponha um horário para apresentar a proposta.', 'Usar "Agendar"', 'agendar'];
+  if (l.status === 'reuniao') return ['🤝', 'Conversa marcada', 'Anote os detalhes e feche o negócio.', 'Marcar fechado 🎉', 'fechado'];
+  if (l.status === 'fechado') return ['🎉', 'Cliente fechado!', 'Parabéns! Guarde as anotações do projeto aqui.', 'Ver anotações', 'details'];
+  return ['📁', l.status === 'perdido' ? 'Lead perdido' : 'Não contatar',
+    l.status === 'nao_contatar' ? 'Pediu para não ser contatado. Respeite a LGPD.' : 'Você pode reabrir quando quiser.', 'Reabrir', 'reopen'];
+}
+
+function renderTop() {
+  const l = S.byId.get(S.sel), box = $('#dTop');
+  if (!l || !box) return;
+  const cur = FLOW.indexOf(l.status);
+  const [ico, t, s, cta, act] = nextStep(l);
+  box.innerHTML = `
+    <div class="stepper" role="group" aria-label="Etapa do funil">
+      ${FLOW.map((k, i) => `<button class="step st-${k} ${i < cur ? 'done' : ''} ${i === cur ? 'cur' : ''}" data-set="${k}" title="Mover para ${STATUS_LABEL[k]}" ${i === cur ? 'aria-current="step"' : ''}>${STATUS_LABEL[k]}</button>`).join('')}
+    </div>
+    <div class="substeps">
+      <span class="temps">${TEMPS.map(([k, ic, lab]) => `<button class="temp-b ${k} ${l.temperature === k ? 'on' : ''}" data-temp="${k}" aria-pressed="${l.temperature === k}">${ic} ${lab}</button>`).join('')}</span>
+      <span class="spacer"></span>
+      <button class="ghost st-perdido ${l.status === 'perdido' ? 'on' : ''}" data-set="perdido">Perdido</button>
+      <button class="ghost st-nao_contatar ${l.status === 'nao_contatar' ? 'on' : ''}" data-set="nao_contatar" title="Pediu para não receber contato">Não contatar</button>
+    </div>
+    <div class="next"><span class="ico">${ico}</span><div><div class="t">${t}</div><div class="s">${s}</div></div>
+      <button class="btn sm primary" data-act="${act}">${cta}</button></div>`;
+}
+
+function renderDetail() {
+  const l = S.byId.get(S.sel);
+  if (!l) return;
+  const link = (href, ic, lab) => href ? `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener">${icon(ic)}${esc(lab)}</a>` : '';
+  $('#detail').innerHTML = `<div class="d-anim">
+    <div class="d-head">
+      <span class="avatar lg seg-${l.seg}">${SEG_ICON[l.seg]}</span>
+      <div><h2>${esc(l.title)}</h2>
+        <div class="sub">${esc(l.category || SEG[l.seg])} · ${esc(l.city)}${l.rating ? ` · ★ ${fmtNota(l.rating)} (${l.reviews || 0} avaliações)` : ''}</div></div>
+      <button class="d-close" id="dClose" aria-label="Fechar">${icon('x')}</button>
+    </div>
+    <div class="d-links">
+      ${link(l.maps_link, 'pin', 'Google Maps')}
+      ${link(l.website, l.platform === 'instagram' ? 'ig' : 'globe', l.site_type === 'com_site' ? 'Site' : PLAT[l.platform] || 'Link')}
+      ${l.ig && l.platform !== 'instagram' ? link('https://instagram.com/' + l.ig, 'ig', '@' + l.ig) : ''}
+      ${l.facebook && l.platform !== 'facebook' ? link(l.facebook, 'ext', 'Facebook') : ''}
+      ${webTag(l)}
+    </div>
+    <div id="dTop"></div>
+    <div class="dtabs" role="tablist">
+      <button class="dtab" data-tab="conversa" role="tab">💬 Conversa <span class="n" id="msgN">${l.msg_count || 0}</span></button>
+      <button class="dtab" data-tab="detalhes" role="tab">📋 Detalhes</button>
+    </div>
+    <div id="pane"></div>
+  </div>`;
+  renderTop();
+  renderPane();
+}
+
+function renderPane() {
+  const l = S.byId.get(S.sel), pane = $('#pane');
+  if (!l || !pane) return;
+  $$('.dtab').forEach(t => { t.classList.toggle('on', t.dataset.tab === S.tab); t.setAttribute('aria-selected', t.dataset.tab === S.tab); });
+  if (S.tab === 'detalhes') {
+    const why = [l.site_type !== 'com_site' ? `+2 ${presence(l).toLowerCase()}` : '', l.ph?.mobile ? '+1 celular' : '',
+      (l.reviews || 0) >= 50 ? '+1 mais de 50 avaliações' : '', (l.reviews || 0) >= 300 ? '+1 mais de 300' : ''].filter(Boolean).join(' · ');
+    pane.innerHTML = `<div class="pane">
+      <div class="sec-t">Contato</div>
+      <div class="kv">
+        ${icon('phone')}<div>${l.phone ? `<a href="tel:${l.ph?.wa ? '+' + l.ph.wa : esc(l.phone)}">${esc(l.phone)}</a> <span class="tag">${l.ph?.mobile ? 'celular' : 'fixo'}</span>` : '—'}<div class="k">Telefone</div></div>
+        ${icon('mail')}<div>${l.emails ? esc(l.emails) : '—'}<div class="k">E-mail</div></div>
+        ${icon('pin')}<div>${esc(l.address) || '—'}<div class="k">Endereço</div></div>
+      </div>
+      <div class="sec-t">Presença online</div>
+      <div id="presBox"></div>
+      <div class="sec-t">Próximo follow-up</div>
+      <input type="date" class="input" id="dfollow" value="${esc(l.follow_up)}" style="max-width:220px" aria-label="Data do follow-up">
+      <div class="quick"><button class="btn sm" data-days="1">Amanhã</button><button class="btn sm" data-days="3">+3 dias</button><button class="btn sm" data-days="7">+1 semana</button><button class="btn sm" data-days="">Limpar</button></div>
+      <div class="sec-t">Potencial estimado</div>
+      <div class="potbox"><span class="big">${l.pot}<span style="font-size:13px;color:var(--muted)">/5</span></span><div>${dots(l.pot)}<div class="why">${why || 'Já tem site próprio e poucas avaliações.'}</div></div></div>
+      <div class="sec-t">Anotações</div>
+      <textarea class="input notes" id="dnotes" placeholder="Ex.: falei com o dono, prefere contato à tarde…" aria-label="Anotações">${esc(l.notes)}</textarea>
+    </div>`;
+    renderPresence(l);
+    return;
+  }
+  const noProfile = !S.cfg.perfil.nome && !S.cfg.perfil.empresa;
+  pane.innerHTML = `<div class="pane">
+    <div class="chat" id="timeline"></div>
+    <div class="composer">
+      ${noProfile ? `<div class="hint warn" style="margin:0 0 8px">Dica: coloque seu nome em <a href="#" id="openCfg2" style="color:inherit;font-weight:600">Modelos</a> para a mensagem se apresentar.</div>` : ''}
+      <div class="chans" role="tablist" aria-label="Canal">
+        <button class="chan" data-ch="whatsapp" role="tab" ${l.ph?.wa ? '' : 'disabled'}>${icon('wa')}WhatsApp</button>
+        <button class="chan" data-ch="instagram" role="tab" ${l.ig ? '' : 'disabled'}>${icon('ig')}Instagram</button>
+        <button class="chan" data-ch="email" role="tab" ${l.email1 ? '' : 'disabled'}>${icon('mail')}E-mail</button>
+      </div>
+      <div id="waBox" hidden></div>
+      <div class="qchips" aria-label="Respostas prontas">
+        <button class="qchip first" data-q="-1">✨ Mensagem inicial</button>
+        ${S.cfg.respostas.map((r, i) => `<button class="qchip" data-q="${i}">${esc(r.titulo)}</button>`).join('')}
+      </div>
+      <input class="input subject" id="subject" placeholder="Assunto" aria-label="Assunto do e-mail">
+      <textarea id="composer" aria-label="Mensagem">${esc(l.draft || (l.msg_count ? '' : firstMessage(l)))}</textarea>
+      <div class="row-actions">
+        <button class="btn sm" id="copyMsg">${icon('copy')}Copiar</button>
+        <span class="spacer"></span>
+        <button class="btn wa" id="sendMsg">${icon('send')}Enviar</button>
+      </div>
+      <p class="hint" id="chHint"></p>
+      <details class="reply" id="replyBox">
+        <summary>${icon('inbox')} O lead respondeu? Cole a resposta aqui</summary>
+        <div class="body">
+          <textarea class="input" id="replyText" placeholder="Cole aqui o que o lead te mandou…" aria-label="Resposta do lead"></textarea>
+          <div class="row-actions">
+            <select class="input" id="replyCh" aria-label="Canal da resposta">${['whatsapp', 'instagram', 'email', 'telefone', 'outro'].map(c => `<option value="${c}">${CHANNEL[c]}</option>`).join('')}</select>
+            <span class="spacer"></span>
+            <button class="btn primary sm" id="saveReply">Registrar resposta</button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>`;
+  $('#replyCh').value = S.channel;
+  $('#subject').value = fill(S.cfg.templates.assunto, vars(l));
+  setChannel(S.channel);
+  renderTimeline();
+}
+function updateTabCount() { const n = $('#msgN'); if (n) n.textContent = S.msgs.length; }
+
+function setChannel(ch) {
+  const l = S.byId.get(S.sel);
+  if (!l || !$('#sendMsg')) return;
+  S.channel = ch;
+  const mode = renderWaBox(l);
+  $$('.chan').forEach(b => { b.classList.toggle('on', b.dataset.ch === ch); b.setAttribute('aria-selected', b.dataset.ch === ch); });
+  $('#subject').hidden = ch !== 'email';
+  const send = $('#sendMsg'), hint = $('#chHint');
+  hint.classList.remove('warn');
+  if (ch === 'whatsapp' && mode === 'web') {
+    const first = S.wa.cfg.first_today || 0;
+    send.className = 'btn wa'; send.innerHTML = `${icon('send')}Enviar pelo WhatsApp`; send.disabled = !l.ph?.wa;
+    hint.textContent = `Vai pelo seu WhatsApp (${fmtWa(S.wa.web.me)}), sem sair do CRM; as respostas chegam aqui. `
+      + `Hoje: ${first} primeira(s) mensagem(ns) de ${DAILY_FIRST} sugeridas.`;
+    if (first >= DAILY_FIRST) { hint.textContent += ' Passar disso aumenta o risco de bloqueio do número.'; hint.classList.add('warn'); }
+    if (!l.ph?.mobile) { hint.textContent += ' Número fixo: pode não ter WhatsApp.'; hint.classList.add('warn'); }
+  } else if (ch === 'whatsapp' && waOn()) {
+    send.className = 'btn wa';
+    send.innerHTML = `${icon('send')}${mode === 'template' ? 'Enviar modelo' : 'Enviar pelo WhatsApp'}`;
+    send.disabled = !l.ph?.wa || mode === 'blocked' || mode === 'none';
+    hint.textContent = (mode === 'open' ? 'Envia pela API oficial, sem sair do CRM.'
+      : 'A primeira mensagem vai como modelo; quando o lead responder, a conversa fica livre por 24h.')
+      + ` As respostas chegam aqui sozinhas. Hoje: ${S.wa.cfg.sent_today || 0} enviada(s).`;
+    if (!l.ph?.mobile) { hint.textContent += ' Número fixo: pode não ter WhatsApp.'; hint.classList.add('warn'); }
+  } else if (ch === 'whatsapp') {
+    send.className = 'btn wa'; send.innerHTML = `${icon('wa')}Abrir no WhatsApp`; send.disabled = !l.ph?.wa;
+    hint.textContent = l.ph?.mobile ? 'Abre o WhatsApp com a mensagem pronta; é só apertar enviar lá. Para enviar sem sair do CRM, conecte o WhatsApp oficial (botão no topo).'
+      : `Número fixo: pode não ter WhatsApp. Se não abrir, ligue para ${l.phone || '—'}.`;
+    if (!l.ph?.mobile) hint.classList.add('warn');
+  } else if (ch === 'instagram') {
+    send.className = 'btn ig'; send.innerHTML = `${icon('ig')}Copiar e abrir Direct`; send.disabled = !l.ig;
+    hint.textContent = `Copia a mensagem e abre o Direct de @${l.ig}. Cole (Ctrl+V) e envie.`;
+  } else {
+    send.className = 'btn primary'; send.innerHTML = `${icon('mail')}Abrir e-mail`; send.disabled = !l.email1;
+    hint.textContent = `Abre seu e-mail com assunto e texto prontos, para ${l.email1 || '—'}.`;
+  }
+  if (!l.msg_count) hint.textContent += ' Depois do envio, o follow-up fica marcado para 3 dias.';
+}
+
+function renderTimeline(popLast = false) {
+  const el = $('#timeline');
+  if (!el) return;
+  el.innerHTML = S.msgs.length ? S.msgs.map((m, i) => `
+    <div class="bubble ${m.direction} ${popLast && i === S.msgs.length - 1 ? 'pop' : ''}"><div class="txt">${esc(m.body)}</div>
+      ${m.wa_error ? `<div class="err">⚠ ${esc(m.wa_error)}</div>` : ''}
+      <div class="meta">${m.template ? '<span class="tag">modelo</span>' : ''}${m.direction === 'out' ? 'Você' : 'Lead'} · ${CHANNEL[m.channel] || esc(m.channel)} · ${fmtTs(m.created_at)}
+        ${m.wa_status && TICKS[m.wa_status] ? `<span class="tick ${m.wa_status}" title="${TICKS[m.wa_status][1]}">${TICKS[m.wa_status][0]}</span>` : ''}
+        <button class="del" data-del="${m.id}" title="Apagar do histórico" aria-label="Apagar mensagem">${icon('x')}</button></div></div>`).join('')
+    : `<div class="chat-empty">Nenhuma mensagem ainda.<br>A primeira já está pronta aqui embaixo 👇</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── actions ──
+async function patchLead(id, data) {
+  const prev = S.byId.get(id)?.status;
+  try {
+    const l = upsert(await api('PATCH', `/api/leads/${id}`, data));
+    if (data.status && data.status !== prev) {
+      S.flash = id; setTimeout(() => { if (S.flash === id) S.flash = null; }, 1000);
+      if (data.status === 'fechado') { confetti(); toast(`🎉 ${l.title} fechado! Parabéns!`); }
+      else toast(`Movido para ${STATUS_LABEL[data.status]}`);
+    }
+    refreshLead(l);
+    return l;
+  } catch (e) { fail(e); }
+}
+const patch = data => patchLead(S.sel, data);
+
+async function logMessage(direction, channel, body) {
+  const id = S.sel, first = !S.byId.get(id).msg_count;
+  let l = upsert(await api('POST', `/api/leads/${id}/messages`, { direction, channel, body }));
+  if (direction === 'out' && !l.follow_up && first) l = upsert(await api('PATCH', `/api/leads/${id}`, { follow_up: addDays(3) }));
+  S.msgs = await api('GET', `/api/leads/${id}/messages`);
+  refreshLead(l);
+  if (S.sel === id) { renderTimeline(true); updateTabCount(); }
+  return l;
+}
+
+let draftTimer, notesTimer;
+async function sendCurrent() {
+  if (S.channel === 'whatsapp' && waOn()) return sendWa();
+  const l = S.byId.get(S.sel), text = $('#composer').value.trim();
+  if (!text) return toast('Escreva a mensagem primeiro.');
+  clearTimeout(draftTimer); // the server clears the draft on send; don't let a pending save restore it
+  if (S.channel === 'whatsapp') {
+    window.open(`https://wa.me/${l.ph.wa}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  } else if (S.channel === 'instagram') {
+    try { await navigator.clipboard.writeText(text); } catch { return toast('Não consegui copiar. Selecione o texto e copie manualmente.'); }
+    window.open(`https://ig.me/m/${l.ig}`, '_blank', 'noopener');
+  } else {
+    const a = document.createElement('a');
+    a.href = `mailto:${encodeURIComponent(l.email1)}?subject=${encodeURIComponent($('#subject').value.trim())}&body=${encodeURIComponent(text)}`;
+    a.click();
+  }
+  try {
+    const subj = $('#subject').value.trim();
+    await logMessage('out', S.channel, S.channel === 'email' && subj ? `Assunto: ${subj}\n\n${text}` : text);
+    $('#composer').value = '';
+    toast(S.channel === 'instagram' ? 'Mensagem copiada: cole no Direct ✓' : 'Mensagem registrada na conversa ✓');
+  } catch (e) { fail(e); }
+}
+function saveDraftSoon() {
+  const id = S.sel, text = $('#composer').value;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => api('PATCH', `/api/leads/${id}`, { draft: text }).then(upsert).catch(fail), 700);
+}
+function saveNotesSoon() {
+  const id = S.sel, text = $('#dnotes').value;
+  clearTimeout(notesTimer);
+  notesTimer = setTimeout(() => api('PATCH', `/api/leads/${id}`, { notes: text }).then(upsert).catch(fail), 700);
+}
+function showTab(tab) { if (S.tab !== tab) { S.tab = tab; renderPane(); } }
+function useQuick(i) {
+  const l = S.byId.get(S.sel);
+  showTab('conversa');
+  const c = $('#composer');
+  c.value = i < 0 ? firstMessage(l) : fill(S.cfg.respostas[i].texto, vars(l));
+  c.focus(); c.setSelectionRange(c.value.length, c.value.length);
+  saveDraftSoon();
+}
+function goTo(tab, sel) {
+  showTab(tab);
+  const el = $(sel);
+  if (el) { el.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' }); el.focus({ preventScroll: true }); }
+}
+function nextAction(act) {
+  const l = S.byId.get(S.sel), find = re => S.cfg.respostas.findIndex(r => re.test(r.titulo));
+  if (act === 'compose') return goTo('conversa', '#composer');
+  if (act === 'followup') return useQuick(find(/follow/i));
+  if (act === 'reply') { goTo('conversa', '#replyBox'); $('#replyBox').open = true; return $('#replyText').focus(); }
+  if (act === 'agendar') { const i = find(/agend/i); return i < 0 ? goTo('conversa', '#composer') : useQuick(i); }
+  if (act === 'details') return goTo('detalhes', '#dnotes');
+  if (act === 'reopen') return patch({ status: l.msg_count ? 'contatado' : 'novo' });
+  return patch({ status: act });
+}
+
+// ── import / export ──
+async function importFile(file) {
+  try {
+    const r = await api('POST', '/api/import', { csv: await file.text() });
+    (await api('GET', '/api/leads')).forEach(upsert);
+    renderMain();
+    toast(`✓ ${r.rows} linhas lidas: ${r.new} leads novos (${r.total} no total).`);
+  } catch (e) { toast('Não consegui importar: ' + e.message); }
+}
+function exportCsv() {
+  const rows = S.visible || visible();
+  const cols = [
+    ['Etapa', l => STATUS_LABEL[l.status]], ['Temperatura', l => l.temperature], ['Potencial', l => l.pot],
+    ['Nome', l => l.title], ['Segmento', l => SEG[l.seg]], ['Cidade', l => l.city], ['Telefone', l => l.phone],
+    ['Celular', l => l.ph?.mobile ? 'sim' : 'não'], ['E-mail', l => l.emails], ['Instagram', l => l.ig ? '@' + l.ig : ''],
+    ['Site', l => l.website], ['Presença', l => presence(l)], ['Fora do Google', l => l.off_google ? 'sim' : ''],
+    ['Links encontrados', l => (l.web_links || []).filter(x => x.match === 'forte').map(x => x.url).join(' ')], ['Nota', l => fmtNota(l.rating)], ['Avaliações', l => l.reviews],
+    ['Follow-up', l => l.follow_up], ['Mensagens', l => l.msg_count], ['Anotações', l => l.notes],
+    ['Endereço', l => l.address], ['Google Maps', l => l.maps_link],
+  ];
+  const q = v => { v = String(v ?? ''); return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  // ';' is the list separator Excel expects in pt-BR
+  const csv = '﻿' + [cols.map(c => c[0]).join(';'), ...rows.map(l => cols.map(c => q(c[1](l))).join(';'))].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `crm-leads-${today()}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`${rows.length} leads exportados.`);
+}
+
+// ── settings & welcome ──
+function renderSettings(cfg) {
+  const ta = (id, label, val, rows = 5) => `<div class="field"><label for="${id}">${label}</label><textarea class="input" id="${id}" rows="${rows}">${esc(val)}</textarea></div>`;
+  $('#settingsBody').innerHTML = `
+    <h3>Seu perfil</h3>
+    <div class="grid2">
+      <div class="field"><label for="cfgNome">Seu nome</label><input class="input" id="cfgNome" value="${esc(cfg.perfil.nome)}"></div>
+      <div class="field"><label for="cfgEmpresa">Empresa</label><input class="input" id="cfgEmpresa" value="${esc(cfg.perfil.empresa)}"></div>
+    </div>
+    <p class="vars">Variáveis que você pode usar: <code>{saudacao}</code> <code>{apresentacao}</code> <code>{nome}</code> <code>{cidade}</code> <code>{segmento}</code> <code>{gancho}</code> <code>{elogio}</code> <code>{plataforma}</code> <code>{nota}</code> <code>{avaliacoes}</code> <code>{meu_nome}</code> <code>{minha_empresa}</code></p>
+    <h3>Primeira mensagem, por presença online</h3>
+    ${ta('tpl_sem_site', 'Sem site', cfg.templates.sem_site)}
+    ${ta('tpl_so_rede_social', 'Só rede social (Instagram, iFood, linktree…)', cfg.templates.so_rede_social)}
+    ${ta('tpl_com_site', 'Com site', cfg.templates.com_site)}
+    ${ta('tpl_fora_do_google', 'Cardápio ou rede social achado fora do Google (o Maps não mostra link)', cfg.templates.fora_do_google)}
+    <div class="field"><label for="tpl_assunto">Assunto do e-mail</label><input class="input" id="tpl_assunto" value="${esc(cfg.templates.assunto)}"></div>
+    <h3>Argumento por segmento <span class="vars">(entra no lugar de {gancho})</span></h3>
+    ${Object.entries(SEG).map(([k, lab]) => ta('g_' + k, `${SEG_ICON[k]} ${lab}`, cfg.ganchos[k], 3)).join('')}
+    <h3>Respostas prontas</h3>
+    <div id="qrList">${cfg.respostas.map(qrHtml).join('')}</div>
+    <button type="button" class="btn sm" id="addQr">+ Adicionar resposta</button>`;
+}
+const qrHtml = r => `<div class="qr"><input class="input qrT" value="${esc(r.titulo)}" placeholder="Título" aria-label="Título">
+  <textarea class="input qrX" aria-label="Texto">${esc(r.texto)}</textarea><button type="button" class="ghost" data-rmqr title="Remover" aria-label="Remover">${icon('x')}</button></div>`;
+function readSettings() {
+  return {
+    onboarded: true,
+    waMap: S.cfg.waMap,
+    perfil: { nome: $('#cfgNome').value.trim(), empresa: $('#cfgEmpresa').value.trim() },
+    templates: { sem_site: $('#tpl_sem_site').value, so_rede_social: $('#tpl_so_rede_social').value,
+      com_site: $('#tpl_com_site').value, fora_do_google: $('#tpl_fora_do_google').value, assunto: $('#tpl_assunto').value },
+    ganchos: Object.fromEntries(Object.keys(SEG).map(k => [k, $('#g_' + k).value])),
+    respostas: $$('.qr').map(q => ({ titulo: $('.qrT', q).value.trim(), texto: $('.qrX', q).value.trim() })).filter(r => r.titulo && r.texto),
+  };
+}
+function mergeCfg(saved) {
+  const c = structuredClone(DEFAULTS);
+  if (!saved) return c;
+  c.onboarded = !!saved.onboarded || !!(saved.perfil && (saved.perfil.nome || saved.perfil.empresa));
+  Object.assign(c.perfil, saved.perfil); Object.assign(c.templates, saved.templates); Object.assign(c.ganchos, saved.ganchos);
+  if (Array.isArray(saved.respostas)) c.respostas = saved.respostas;
+  c.waMap = saved.waMap || {};
+  return c;
+}
+async function saveCfg(cfg, msg) {
+  await api('PUT', '/api/settings', cfg);
+  S.cfg = mergeCfg(cfg);
+  if (msg) toast(msg);
+  if (S.sel) renderDetail();
+}
+function openSettings() { renderSettings(S.cfg); $('#settings').showModal(); }
+
+function setView(v) {
+  S.view = v;
+  document.body.classList.toggle('view-funil', v === 'funil');
+  $$('.views button').forEach(b => { b.classList.toggle('on', b.dataset.view === v); b.setAttribute('aria-selected', b.dataset.view === v); });
+  moveThumb();
+  if (v === 'funil') closeDetail();
+  renderMain();
+}
+function moveThumb() {
+  const b = $(`.views button[data-view="${S.view}"]`), th = $('#viewThumb');
+  th.style.left = b.offsetLeft + 'px'; th.style.width = b.offsetWidth + 'px';
+}
+function clearFilters() {
+  Object.assign(S.f, { q: '', tipos: new Set(), city: '', segs: new Set(), temp: '', ch: new Set(), due: false });
+  $('#q').value = '';
+}
+
+// ── online presence (crm/presence.py) ──
+const KIND_LABEL = { site: 'Site próprio', cardapio: 'Cardápio digital', ifood: 'Delivery', social: 'Rede social' };
+const SRC_LABEL = { busca: 'achado na busca', whatsmenu: 'confirmado no WhatsMenu', foodplus: 'achado no Foodplus',
+  linktree: 'dentro do Linktree', redirect: 'destino do link encurtado', manual: 'adicionado por você' };
+function renderPresence(l) {
+  const box = $('#presBox'); if (!box) return;
+  const links = (l.web_links || []).filter(x => x.match !== 'rejeitado');
+  const auto = l.presence_override ? '' : 'selected';
+  const opt = (v, lab) => `<option value="${v}" ${l.presence_override === v ? 'selected' : ''}>${lab}</option>`;
+  box.innerHTML = `
+    <div class="pres-head">
+      <span class="tag ${l.site_type === 'com_site' ? '' : 'web-sem'}">${presence(l)}</span>
+      ${l.off_google ? '<span class="tag off">🔎 fora do Google</span>' : ''}
+      <span class="hint" style="margin:0">${l.web_checked_at ? 'verificado em ' + fmtTs(l.web_checked_at) : 'ainda não verificado na web'}</span>
+      <span class="spacer"></span>
+      <button class="btn sm" id="presCheck">${icon('refresh')}Verificar agora</button>
+    </div>
+    <div class="kv" style="margin-bottom:8px">${icon('pin')}<div>${l.website ? `<a href="${esc(l.website)}" target="_blank" rel="noopener">${esc(l.website.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60))}</a>` : 'Nenhum link no perfil'}<div class="k">No Google Maps</div></div></div>
+    <div class="plinks">${links.map(x => `
+      <div class="plink ${x.match === 'parcial' ? 'parcial' : ''}">
+        <span class="tag">${esc(x.name || KIND_LABEL[x.kind] || x.kind)}</span>
+        <div style="min-width:0"><a href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.url)}">${esc(x.url.replace(/^https?:\/\/(www\.)?/, ''))}</a>
+          <div class="src">${x.match === 'parcial' ? '❓ pode ser de outro lugar: confira · ' : ''}${SRC_LABEL[x.source] || x.source}</div></div>
+        <span class="acts">${x.match === 'parcial' ? `<button class="btn sm" data-link="confirm" data-url="${esc(x.url)}" title="É deste lead">✓ É dele</button>` : ''}
+          <button class="ghost" data-link="${x.source === 'manual' ? 'remove' : 'reject'}" data-url="${esc(x.url)}" title="Não é deste lead" aria-label="Remover link">${icon('x')}</button></span>
+      </div>`).join('') || '<div class="hint" style="margin:0">Nenhum outro link encontrado.</div>'}</div>
+    <div class="pres-add"><input class="input" id="presUrl" placeholder="Achou outro link? Cole aqui (cardápio, site, Instagram…)" aria-label="Adicionar link">
+      <button class="btn sm" id="presAdd">Adicionar</button></div>
+    <div class="field" style="margin-top:10px"><label for="presOverride">Classificação</label>
+      <select class="input" id="presOverride" style="max-width:320px">
+        <option value="" ${auto}>Automática (pelos links)</option>${opt('sem_site', 'Sem site')}${opt('so_rede_social', 'Só rede social ou cardápio')}${opt('com_site', 'Com site próprio')}
+      </select></div>`;
+}
+async function linkAction(action, url) {
+  try { refreshLead(upsert(await api('POST', `/api/leads/${S.sel}/links`, { action, url }))); }
+  catch (e) { toast('Não consegui salvar: ' + e.message); }
+}
+async function checkNow() {
+  const b = $('#presCheck'), id = S.sel;
+  if (b) { b.disabled = true; b.innerHTML = '<span class="spin" style="width:12px;height:12px"></span> Verificando…'; }
+  try {
+    const l = upsert(await api('POST', `/api/leads/${id}/presence/check`));
+    refreshLead(l);
+    toast(l.off_google ? `🔎 Achei ${presence(l).replace('Só ', '')} fora do Google` : `Verificado: ${presence(l)}`);
+  } catch (e) { toast(e.message); if (S.sel === id) renderPresence(S.byId.get(id)); }
+}
+
+let presTimer;
+function presHtml(st) {
+  const pct = st.total ? Math.round(100 * st.done / st.total) : 0;
+  const body = st.running
+    ? `<p>Verificando <b>${st.done} de ${st.total}</b>${st.current ? ` · agora: ${esc(st.current)}` : ''}</p>
+       <div class="progress"><i style="width:${pct}%"></i></div>
+       <p class="hint">${st.changed} reclassificado(s) até agora. Pode fechar esta janela e continuar usando o CRM: a lista se atualiza sozinha.</p>
+       ${st.error ? `<p class="hint warn">${esc(st.error)}</p>` : ''}
+       <div class="row-actions"><span class="spacer"></span><button class="btn" id="presStop">Parar</button></div>`
+    : `${st.done ? `<div class="wa-status ok"><span>✅</span><div><b>${st.done} verificado(s), ${st.changed} reclassificado(s)</b></div></div>` : ''}
+       ${st.error ? `<p class="hint warn">${esc(st.error)}</p>` : ''}
+       <p class="hint">${st.pending} lead(s) sem site próprio no Google ainda não foram verificados. Leva uns 10 segundos por lead (cerca de ${Math.max(1, Math.round(st.pending * 10 / 60))} min), sem pressa para não ser bloqueado pelos buscadores.</p>
+       <div class="row-actions"><button class="btn sm" id="presAll">Verificar todos de novo</button><span class="spacer"></span>
+         <button class="btn primary" id="presStart" ${st.pending ? '' : 'disabled'}>${st.done && st.pending ? 'Continuar' : 'Iniciar validação'}</button></div>`;
+  return `<p>O Google Maps nem sempre mostra o site ou o cardápio de um restaurante, e às vezes o "site" dele é só uma plataforma de delivery. A validação procura cada lead na web e confere:</p>
+    <ol class="steps">
+      <li><b>Busca na web</b> pelo nome e pela cidade (Bing e DuckDuckGo). Só vale o link que traz o nome do restaurante no endereço.</li>
+      <li><b>WhatsMenu e Foodplus</b> pelo endereço provável da loja, conferindo o nome (e a cidade no Foodplus).</li>
+      <li><b>Linktree e links encurtados</b>: abre e vê para onde levam.</li>
+    </ol>
+    <p class="hint">Achados duvidosos ficam como <b>sugestão</b> no lead (aba Detalhes → Presença online) até você confirmar. Nenhuma busca é 100%: confira os leads quentes antes de mandar mensagem.</p>
+    ${body}`;
+}
+async function refreshPres() {
+  let st;
+  try { st = await api('GET', '/api/presence'); } catch { return; }
+  $('#presRun').textContent = st.running ? ` ${st.done}/${st.total}` : '';
+  if ($('#presDlg').open) $('#presBody').innerHTML = presHtml(st);
+  clearTimeout(presTimer);
+  if (st.running || $('#presDlg').open) presTimer = setTimeout(refreshPres, st.running ? 2000 : 8000);
+}
+function openPres() { $('#presDlg').showModal(); refreshPres(); }
+
+// ── WhatsApp (official Cloud API) ──
+const WA_SOURCES = { apresentacao: 'Você (nome, empresa)', nome: 'Nome do lead', cidade: 'Cidade', gancho: 'Argumento do segmento',
+  plataforma: 'Plataforma (Instagram, iFood…)', segmento: 'Segmento', nota: 'Nota no Google', avaliacoes: 'Nº de avaliações',
+  saudacao: 'Saudação (bom dia…)', fixo: 'Texto livre' };
+// Variable sources for the suggested templates the server can create (whatsapp.py SUGGESTED).
+const DEFAULT_MAP = { prospeccao_sem_site: ['apresentacao', 'nome', 'cidade', 'gancho'],
+  prospeccao_rede_social: ['apresentacao', 'nome', 'plataforma', 'gancho'], prospeccao_com_site: ['apresentacao', 'nome', 'gancho'] };
+const PREFERRED = { sem_site: 'prospeccao_sem_site', so_rede_social: 'prospeccao_rede_social', com_site: 'prospeccao_com_site' };
+const TICKS = { accepted: ['🕓', 'Enviando'], sent: ['✓', 'Enviada'], delivered: ['✓✓', 'Entregue'], read: ['✓✓', 'Lida'], failed: ['⚠ falhou', 'Não entregue'] };
+const TPL_STATUS = { APPROVED: ['Aprovado', 'st-fechado'], PENDING: ['Em análise', 'st-interessado'], REJECTED: ['Rejeitado', 'st-perdido'],
+  PAUSED: ['Pausado', 'st-perdido'], DISABLED: ['Desativado', 'st-nao_contatar'] };
+const webReady = () => S.wa.web?.status === 'ready';
+const waOn = () => webReady() || !!S.wa.cfg.configured;
+const DAILY_FIRST = 25; // suggested cap of first contacts per day from a personal number
+const fmtWa = n => String(n || '').replace(/^55(\d{2})(\d{4,5})(\d{4})$/, '+55 $1 $2-$3');
+const tplKey = t => t.name + '|' + t.language;
+const approved = () => S.wa.templates.filter(t => t.status === 'APPROVED');
+const currentTemplate = () => approved().find(t => tplKey(t) === S.tplSel);
+
+function prepTemplate(t) {
+  const comps = t.components || [], body = comps.find(c => c.type === 'BODY')?.text || '';
+  let vars = [...new Set([...body.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map(m => m[1]))];
+  const named = vars.some(v => !/^\d+$/.test(v));
+  if (!named) vars.sort((a, b) => a - b);
+  const header = comps.find(c => c.type === 'HEADER');
+  const urlVar = (comps.find(c => c.type === 'BUTTONS')?.buttons || []).some(b => /\{\{/.test(b.url || ''));
+  const unsupported = (header && (header.format !== 'TEXT' || /\{\{/.test(header.text || ''))) || urlVar
+    ? 'Este modelo tem cabeçalho com mídia/variável ou botão com link variável, que o CRM ainda não preenche: o envio pode falhar.' : '';
+  return { name: t.name, language: t.language, status: t.status, category: t.category, body, vars, named,
+    footer: comps.find(c => c.type === 'FOOTER')?.text || '', unsupported, reason: t.rejected_reason };
+}
+function waWindowEnd(l) {
+  if (!l.wa_last_in) return null;
+  const end = new Date(new Date(l.wa_last_in).getTime() + 24 * 3600e3);
+  return end > new Date() ? end : null;
+}
+function sourceValue(src, l) {
+  if (src === 'fixo') return '';
+  if (src === 'apresentacao') { const p = S.cfg.perfil; return p.nome && p.empresa ? `${p.nome}, da ${p.empresa}` : p.nome || p.empresa || ''; }
+  return String(vars(l)[src] ?? '');
+}
+const renderTpl = (t, vals) => t.body.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, k) => vals[t.vars.indexOf(k)] || m);
+
+// The WhatsApp composer has three modes: free text inside the 24h window, a template outside it,
+// or blocked. Returns the mode so setChannel can label the send button.
+function renderWaBox(l) {
+  const box = $('#waBox'), comp = $('#composer'), qc = $('.qchips'), on = S.channel === 'whatsapp' && waOn();
+  const offline = S.channel === 'whatsapp' && !on && S.wa.web.installed;
+  box.hidden = !on && !offline;
+  comp.hidden = false; qc.hidden = false;
+  if (offline) {
+    box.innerHTML = '<div class="wa-banner off">📱 Seu WhatsApp não está conectado ao CRM. <button class="linkbtn" id="openWa2">Conectar pelo QR code</button></div>';
+    return 'off';
+  }
+  if (!on) return 'off';
+  if (l.status === 'nao_contatar') {
+    box.innerHTML = '<div class="wa-banner off">⛔ Este lead pediu para não ser contatado.</div>';
+    comp.hidden = qc.hidden = true;
+    return 'blocked';
+  }
+  if (webReady()) { box.hidden = true; return 'web'; }
+  const end = waWindowEnd(l);
+  if (end) {
+    box.innerHTML = `<div class="wa-banner open">🟢 Conversa aberta até ${fmtTs(ymd(end) + 'T' + end.toTimeString().slice(0, 5))}: pode escrever livremente.</div>`;
+    return 'open';
+  }
+  comp.hidden = qc.hidden = true;
+  const tpls = approved();
+  if (!tpls.length) {
+    box.innerHTML = `<div class="wa-banner">📝 Para iniciar a conversa, o WhatsApp exige um <b>modelo aprovado</b> pela Meta, e você ainda não tem nenhum. <button class="linkbtn" id="openWa2">Criar os modelos sugeridos</button></div>`;
+    return 'none';
+  }
+  const t = currentTemplate() || tpls.find(x => x.name === PREFERRED[l.site_type]) || tpls[0];
+  S.tplSel = tplKey(t);
+  const map = S.cfg.waMap[t.name] || DEFAULT_MAP[t.name] || [];
+  box.innerHTML = `<div class="wa-banner">📝 ${l.msg_in ? 'Passaram 24h desde a última resposta' : 'Primeira mensagem'}: o WhatsApp exige um modelo aprovado. Confira as variáveis.</div>
+    <div class="field"><label for="tplSel">Modelo</label><select class="input" id="tplSel">${tpls.map(x => `<option value="${esc(tplKey(x))}" ${tplKey(x) === S.tplSel ? 'selected' : ''}>${esc(x.name)} · ${esc(x.language)}</option>`).join('')}</select></div>
+    ${t.vars.map((v, i) => { const src = map[i] || (i === 0 ? 'nome' : 'fixo'); return `<div class="tvar"><code>{{${esc(v)}}}</code>
+      <select class="input" data-src="${i}" aria-label="Origem da variável ${esc(v)}">${Object.entries(WA_SOURCES).map(([k, lab]) => `<option value="${k}" ${k === src ? 'selected' : ''}>${lab}</option>`).join('')}</select>
+      <input class="input" data-val="${i}" value="${esc(sourceValue(src, l))}" placeholder="Escreva o valor" aria-label="Valor da variável ${esc(v)}"></div>`; }).join('')}
+    ${t.unsupported ? `<div class="hint warn">${t.unsupported}</div>` : ''}
+    <div class="tpl-prev"><div class="bubble out"><div class="txt" id="tplPrev"></div>${t.footer ? `<div class="foot">${esc(t.footer)}</div>` : ''}</div></div>`;
+  updatePreview();
+  return 'template';
+}
+function updatePreview() {
+  const t = currentTemplate(), el = $('#tplPrev');
+  if (t && el) el.textContent = renderTpl(t, $$('[data-val]').map(i => i.value.trim()));
+}
+let mapTimer;
+function setTemplateSource(i, src) {
+  const t = currentTemplate(); if (!t) return;
+  const map = S.cfg.waMap[t.name] || (S.cfg.waMap[t.name] = [...(DEFAULT_MAP[t.name] || [])]);
+  map[i] = src;
+  $(`[data-val="${i}"]`).value = sourceValue(src, S.byId.get(S.sel));
+  updatePreview();
+  clearTimeout(mapTimer); mapTimer = setTimeout(() => api('PUT', '/api/settings', S.cfg).catch(fail), 600);
+}
+
+async function sendWa() {
+  const l = S.byId.get(S.sel), web = webReady(), win = web || waWindowEnd(l);
+  const isFirst = !S.msgs.some(m => m.direction === 'out' && m.channel === 'whatsapp' && m.wa_msg_id);
+  if (web && isFirst && (S.wa.cfg.first_today || 0) >= DAILY_FIRST
+      && !confirm(`Você já mandou ${S.wa.cfg.first_today} primeiras mensagens hoje pelo seu WhatsApp. Passar disso aumenta o risco de o WhatsApp bloquear seu número. Enviar mesmo assim?`)) return;
+  let payload;
+  if (win) {
+    const text = $('#composer').value.trim();
+    if (!text) return toast('Escreva a mensagem primeiro.');
+    payload = { type: 'text', body: text };
+  } else {
+    const t = currentTemplate();
+    if (!t) return toast('Escolha um modelo aprovado.');
+    const vals = $$('[data-val]').map(i => i.value.trim());
+    if (vals.some(v => !v)) return toast('Preencha todas as variáveis do modelo.');
+    payload = { type: 'template', name: t.name, language: t.language, params: vals, param_names: t.named ? t.vars : null, preview: renderTpl(t, vals) };
+  }
+  clearTimeout(draftTimer);
+  const btn = $('#sendMsg'), first = !l.msg_count;
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    let nl = upsert(await api('POST', `/api/leads/${l.id}/wa/send`, payload));
+    if (first && !nl.follow_up) nl = upsert(await api('PATCH', `/api/leads/${l.id}`, { follow_up: addDays(3) }));
+    S.wa.cfg.sent_today = (S.wa.cfg.sent_today || 0) + 1;
+    if (isFirst) S.wa.cfg.first_today = (S.wa.cfg.first_today || 0) + 1;
+    S.msgs = await api('GET', `/api/leads/${l.id}/messages`);
+    refreshLead(nl);
+    if (S.sel === l.id) { if (win) $('#composer').value = ''; renderTimeline(true); updateTabCount(); }
+    toast('✓ Enviado pelo WhatsApp');
+  } catch (e) { toast('Não enviou: ' + e.message); }
+  if (S.sel === l.id) setChannel('whatsapp');
+}
+
+async function loadWa() {
+  try { S.wa.cfg = await api('GET', '/api/wa/config'); S.wa.web = S.wa.cfg.web || S.wa.web; } catch { return; }
+  $('#waDot').classList.toggle('on', waOn());
+  if (!waOn() || !S.wa.cfg.waba_id) { S.wa.templates = []; return; }
+  try { S.wa.templates = (await api('GET', '/api/wa/templates')).map(prepTemplate); S.wa.tplErr = ''; }
+  catch (e) { S.wa.tplErr = e.message; }
+}
+function tplListHtml() {
+  if (S.wa.tplErr) return `<div class="hint warn">${esc(S.wa.tplErr)}</div>`;
+  if (!S.wa.templates.length) return '<div class="hint">Nenhum modelo ainda.</div>';
+  return S.wa.templates.map(t => {
+    const [lab, cls] = TPL_STATUS[t.status] || [t.status, ''];
+    return `<div class="tpl-item"><b>${esc(t.name)}</b><span class="tag">${esc(t.language)}</span><span class="tag">${esc((t.category || '').toLowerCase())}</span>
+      ${t.reason && t.reason !== 'NONE' ? `<span class="hint warn" style="margin:0">${esc(t.reason)}</span>` : ''}<span class="pill ${cls}">${lab}</span></div>`;
+  }).join('');
+}
+function apiTabHtml(info) {
+  const c = S.wa.cfg, port = location.port || 8765, cmd = `ngrok http ${port} --url=SEU-DOMINIO.ngrok-free.app`;
+  return `
+    <div class="wa-status ${c.configured ? 'ok' : ''}"><span class="wa-dot ${c.configured ? 'on' : ''}"></span><div>
+      <b>${c.configured ? (info ? `Conectado: ${esc(info.display_phone_number || '')} · ${esc(info.verified_name || '')}` : 'Conectado') : 'Ainda não conectado'}</b>
+      <div class="hint" style="margin:2px 0 0">${c.configured ? `${info?.quality_rating ? 'Qualidade do número: ' + esc(info.quality_rating) + ' · ' : ''}Hoje: ${c.sent_today || 0} mensagem(ns) enviada(s)` : 'Siga os passos abaixo. Leva uns 15 minutos.'}</div></div></div>
+    <div class="wa-warn">⚠️ <b>Sobre o seu número:</b> um número registrado na API oficial <b>deixa de funcionar no app do WhatsApp</b> do celular. Comece pelo <b>número de teste grátis</b> da Meta, que envia para até 5 números cadastrados (como o seu celular). Para usar de verdade, prefira um número que não esteja no app, como o fixo da empresa ou um número virtual (a verificação pode ser por ligação).</div>
+    <h3>1. Crie o app na Meta</h3>
+    <ol class="steps">
+      <li>Acesse <b>developers.facebook.com</b> → <b>Meus apps</b> → <b>Criar app</b> → caso de uso <b>Empresa</b> → adicione o produto <b>WhatsApp</b>. A Meta cria um número de teste e uma conta do WhatsApp Business.</li>
+      <li>Em <b>WhatsApp → Configuração da API</b>, copie o <b>ID do número de telefone</b> e o <b>ID da conta do WhatsApp Business</b>. No campo <b>Para</b>, cadastre seu celular para receber os testes.</li>
+      <li><b>Token:</b> o token temporário dessa página vale 24h e serve para testar. O definitivo: <b>business.facebook.com → Configurações → Usuários do sistema</b> → adicionar (Admin) → atribuir o app e a conta do WhatsApp → <b>Gerar token</b> com as permissões <code>whatsapp_business_messaging</code> e <code>whatsapp_business_management</code>.</li>
+      <li><b>Chave secreta:</b> no app, <b>Configurações do app → Básico → Chave secreta do app</b>. Ela garante que as respostas vieram mesmo da Meta.</li>
+    </ol>
+    <h3>2. Cole os dados aqui</h3>
+    <div class="grid2">
+      <div class="field"><label for="waToken">Token de acesso</label><input class="input" id="waToken" type="password" autocomplete="off" placeholder="${c.has_token ? `Salvo (${esc(c.token_hint)}). Cole outro para trocar` : 'EAAG…'}"></div>
+      <div class="field"><label for="waSecret">Chave secreta do app</label><input class="input" id="waSecret" type="password" autocomplete="off" placeholder="${c.has_secret ? 'Salva. Cole outra para trocar' : '32 caracteres'}"></div>
+      <div class="field"><label for="waPhone">ID do número de telefone</label><input class="input" id="waPhone" value="${esc(c.phone_number_id)}" inputmode="numeric"></div>
+      <div class="field"><label for="waWaba">ID da conta do WhatsApp Business</label><input class="input" id="waWaba" value="${esc(c.waba_id)}" inputmode="numeric"></div>
+    </div>
+    <details><summary class="hint" style="cursor:pointer">Avançado</summary>
+      <div class="field" style="margin-top:8px"><label for="waVer">Versão da API</label><input class="input" id="waVer" value="${esc(c.api_version || '')}" style="max-width:140px"></div></details>
+    <div class="row-actions"><span class="spacer"></span><button class="btn primary" id="waSave">Salvar e testar</button></div>
+    <h3>3. Modelos de mensagem</h3>
+    <p class="hint">A primeira mensagem para um lead precisa ser um <b>modelo aprovado</b> pela Meta (a análise leva de minutos a 1 dia). O botão abaixo envia 3 modelos prontos para aprovação, um para cada tipo de presença online, com seu nome, o nome do lead, a cidade e o argumento do segmento como variáveis, e um rodapé "Responda SAIR". A Meta cobra cada mensagem de modelo enviada; depois que o lead responde, a conversa fica livre por 24h.</p>
+    <div class="tpl-list" id="tplList">${tplListHtml()}</div>
+    <div class="row-actions"><button class="btn sm" id="tplRefresh">${icon('refresh')}Atualizar</button><span class="spacer"></span>
+      <button class="btn sm primary" id="tplCreate" ${c.configured && c.waba_id ? '' : 'disabled'}>Criar os 3 modelos sugeridos</button></div>
+    <h3>4. Receber as respostas no CRM</h3>
+    <ol class="steps">
+      <li>A Meta precisa de um endereço público para entregar as respostas. Instale o <b>ngrok</b> (ngrok.com, o plano grátis inclui 1 domínio fixo) e, com o CRM aberto, rode:
+        <div class="copyrow" style="margin-top:6px"><input class="input" readonly value="${esc(cmd)}" aria-label="Comando do ngrok"><button class="btn sm" data-copy="${esc(cmd)}" aria-label="Copiar">${icon('copy')}</button></div></li>
+      <li>Em <b>WhatsApp → Configuração → Webhook → Editar</b>, use a URL de callback <code>https://SEU-DOMINIO.ngrok-free.app/webhook</code> e este token de verificação:
+        <div class="copyrow" style="margin-top:6px"><input class="input" readonly value="${esc(c.verify_token || 'salve os dados acima primeiro')}" aria-label="Token de verificação"><button class="btn sm" data-copy="${esc(c.verify_token || '')}" ${c.verify_token ? '' : 'disabled'} aria-label="Copiar">${icon('copy')}</button></div>
+        Clique em <b>Verificar e salvar</b> e, em <b>Campos do webhook</b>, assine <code>messages</code>.</li>
+      <li>Pelo túnel, só o endereço <code>/webhook</code> responde. O resto do CRM, com seus leads, continua acessível apenas neste computador.</li>
+    </ol>`;
+}
+function webTabHtml() {
+  const w = S.wa.web, c = S.wa.cfg;
+  const risk = `<div class="wa-warn">⚠️ <b>Atenção:</b> isso usa o WhatsApp Web por baixo dos panos, fora das regras do WhatsApp. Como é o seu número principal, um bloqueio tiraria o seu WhatsApp. Para reduzir o risco: envie <b>um por vez</b>, no máximo <b>${DAILY_FIRST} primeiras mensagens por dia</b>, com intervalo entre elas, sempre personalizadas, e pare alguns dias se muita gente bloquear ou denunciar. Se o número for bloqueado, dá para migrar para a aba <b>API oficial</b>.</div>`;
+  let body;
+  if (w.status === 'not_installed') body = `<h3>Instalar (uma vez)</h3><ol class="steps">
+      <li>Na pasta <code>crm</code>, dê dois cliques em <b>instalar-whatsapp.bat</b>. Ele instala a ponte do WhatsApp Web (cerca de 1 minuto) e usa o Chrome que você já tem.</li>
+      <li>Feche a janela preta do CRM e abra de novo pelo <b>abrir-crm.bat</b>.</li>
+      <li>Volte aqui: vai aparecer um QR code para escanear com o celular.</li></ol>`;
+  else if (w.status === 'qr' && w.qr) body = `<div class="qr-box"><img src="${w.qr}" alt="QR code do WhatsApp">
+      <ol class="steps"><li>Abra o <b>WhatsApp</b> no celular.</li><li>Toque em <b>⋮</b> (ou Configurações) → <b>Aparelhos conectados</b> → <b>Conectar um aparelho</b>.</li>
+      <li>Aponte a câmera para este código.</li><li>Pronto: o CRM aparece como um aparelho conectado, como o WhatsApp Web. O código se renova sozinho.</li></ol></div>`;
+  else if (w.status === 'ready') body = `<div class="wa-status ok"><span class="wa-dot on"></span><div><b>Conectado como ${esc(fmtWa(w.me))}${w.name ? ' · ' + esc(w.name) : ''}</b>
+      <div class="hint" style="margin:2px 0 0">Hoje: ${c.first_today || 0} primeira(s) mensagem(ns) · ${c.sent_today || 0} no total. As respostas dos leads chegam sozinhas no CRM.</div></div>
+      <span class="spacer"></span><button class="btn sm" id="webLogout">Desconectar</button></div>`;
+  else if (['starting', 'authenticating'].includes(w.status) || (w.status === 'qr' && !w.qr)) body = `<div class="wa-status"><span class="spin"></span><div><b>${w.status === 'authenticating' ? 'Conectando ao seu WhatsApp…' : 'Abrindo o WhatsApp Web…'}</b>
+      <div class="hint" style="margin:2px 0 0">Leva uns 20 segundos na primeira vez.</div></div></div>`;
+  else body = `<div class="wa-status"><span class="wa-dot"></span><div><b>${w.status === 'disconnected' ? 'Desconectado' : 'Não foi possível conectar'}</b>
+      <div class="hint warn" style="margin:2px 0 0">${esc(w.error || '')}${w.status === 'disconnected' ? ' Um novo QR code aparece em instantes.' : ''}</div></div></div>`;
+  return body + risk;
+}
+function renderWaDlg(info) {
+  $('#waBody').innerHTML = `<div class="wa-tabs" role="tablist">
+      <button role="tab" data-watab="web" class="${S.waTab === 'web' ? 'on' : ''}">📱 WhatsApp Web (QR code)</button>
+      <button role="tab" data-watab="api" class="${S.waTab === 'api' ? 'on' : ''}">🏢 API oficial (Meta)</button></div>
+    ${S.waTab === 'web' ? webTabHtml() : apiTabHtml(info)}`;
+}
+let qrTimer;
+function openWa() {
+  renderWaDlg(); $('#waDlg').showModal();
+  clearInterval(qrTimer); qrTimer = setInterval(() => { if (!$('#waDlg').open) return clearInterval(qrTimer); poll(); }, 2000);
+}
+
+function setTitle() { document.title = (S.unread ? `(${S.unread}) ` : '') + 'CRM de Leads'; }
+// Replies arrive through the webhook; the page picks them up from /api/changes.
+let polling = false; // the dialog's 2s timer and the 4s loop must not process the same changes twice
+async function poll() {
+  if (polling) return;
+  polling = true;
+  try { await pollOnce(); } finally { polling = false; }
+}
+async function pollOnce() {
+  let r;
+  try { r = await api('GET', '/api/changes' + (S.seq == null ? '' : '?since=' + S.seq)); } catch { return; }
+  const first = S.seq == null;
+  S.seq = r.seq;
+  const prev = S.wa.web;
+  if (r.web) S.wa.web = r.web;
+  if (r.sent_today != null) Object.assign(S.wa.cfg, { sent_today: r.sent_today, first_today: r.first_today });
+  if (r.web && (r.web.status !== prev.status || r.web.qr !== prev.qr)) {
+    $('#waDot').classList.toggle('on', waOn());
+    if ($('#waDlg').open && S.waTab === 'web') renderWaDlg();
+    if (r.web.status !== prev.status && S.sel && S.channel === 'whatsapp') setChannel('whatsapp');
+    if (r.web.status === 'ready' && prev.status !== 'ready' && !first) toast(`✓ WhatsApp conectado: ${fmtWa(r.web.me)}`);
+  }
+  if (first || !r.leads.length) return;
+  const added = r.leads.some(l => !S.byId.has(l.id));
+  r.leads.forEach(upsert);
+  if (added) renderMain(false); else r.leads.forEach(refreshLead);
+  if (r.leads.some(l => l.id === S.sel) && $('#timeline')) {
+    S.msgs = await api('GET', `/api/leads/${S.sel}/messages`).catch(() => S.msgs);
+    renderTimeline(r.incoming.includes(S.sel)); updateTabCount();
+    if (S.channel === 'whatsapp') setChannel('whatsapp');
+  }
+  for (const id of r.incoming) {
+    const l = S.byId.get(id); if (!l) continue;
+    if (id !== S.sel || document.hidden) S.unread++;
+    toast(`💬 Nova mensagem de ${l.title}`);
+  }
+  setTitle();
+}
+
+// ── events ──
+$('.views').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view); });
+$('#kpis').addEventListener('click', e => {
+  const k = e.target.closest('[data-status]')?.dataset.status; if (!k) return;
+  S.f.status = S.f.status === k ? 'todos' : k;
+  if (S.view !== 'lista') setView('lista'); else renderMain();
+});
+$('#q').addEventListener('input', e => {
+  S.f.q = e.target.value;
+  if (S.view === 'lista') { renderStages(); renderList(false); } else renderBoard();
+});
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const f = S.f, d = b.dataset, toggle = (set, v) => set.has(v) ? set.delete(v) : set.add(v);
+  if (d.tipo) toggle(f.tipos, d.tipo);
+  else if (d.seg) toggle(f.segs, d.seg);
+  else if (d.ch) toggle(f.ch, d.ch);
+  else if (d.temp) f.temp = f.temp === d.temp ? '' : d.temp;
+  else if (b.id === 'clearF') clearFilters();
+  else return;
+  renderMain();
+});
+$('#chips').addEventListener('change', e => { if (e.target.id === 'fcity') { S.f.city = e.target.value; renderMain(); } });
+$('#stages').addEventListener('click', e => { const b = e.target.closest('[data-status]'); if (!b) return; S.f.status = b.dataset.status; renderMain(); });
+$('#sort').addEventListener('change', e => { S.f.sort = e.target.value; renderList(); });
+$('#dueBtn').addEventListener('click', () => {
+  S.f.due = !S.f.due;
+  if (S.f.due) { S.f.sort = 'followup'; $('#sort').value = 'followup'; }
+  renderMain();
+});
+$('#exportBtn').addEventListener('click', exportCsv);
+$('#settingsBtn').addEventListener('click', openSettings);
+$('#importBtn').addEventListener('click', () => $('#fileIn').click());
+$('#fileIn').addEventListener('change', e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ''; });
+$('#scrim').addEventListener('click', closeDetail);
+$('#rows').addEventListener('click', e => {
+  if (e.target.id === 'clearF2') { clearFilters(); S.f.status = 'todos'; return renderMain(); }
+  const r = e.target.closest('.lrow'); if (r) select(Number(r.dataset.id));
+});
+
+// kanban: click to open, drag to move between stages
+const board = $('#board');
+board.addEventListener('click', e => {
+  const m = e.target.closest('[data-more]');
+  if (m) { S.boardLimit[m.dataset.more] = (S.boardLimit[m.dataset.more] || 30) + 30; return renderBoard(); }
+  const c = e.target.closest('.card'); if (c) select(Number(c.dataset.id));
+});
+board.addEventListener('keydown', e => { const c = e.target.closest('.card'); if (c && e.key === 'Enter') select(Number(c.dataset.id)); });
+board.addEventListener('dragstart', e => {
+  const c = e.target.closest('.card'); if (!c) return;
+  e.dataTransfer.setData('text/plain', c.dataset.id); e.dataTransfer.effectAllowed = 'move';
+  requestAnimationFrame(() => c.classList.add('dragging'));
+});
+board.addEventListener('dragend', e => e.target.closest('.card')?.classList.remove('dragging'));
+board.addEventListener('dragover', e => {
+  const col = e.target.closest('.col'); if (!col) return;
+  e.preventDefault();
+  $$('.col.over').forEach(c => c !== col && c.classList.remove('over'));
+  col.classList.add('over');
+});
+board.addEventListener('dragleave', e => { const col = e.target.closest('.col'); if (col && !col.contains(e.relatedTarget)) col.classList.remove('over'); });
+board.addEventListener('drop', e => {
+  const col = e.target.closest('.col'); if (!col) return;
+  e.preventDefault(); col.classList.remove('over');
+  const id = Number(e.dataTransfer.getData('text/plain')), l = S.byId.get(id);
+  if (l && l.status !== col.dataset.col) patchLead(id, { status: col.dataset.col });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.body.classList.contains('detail-open') && !$('dialog[open]')) return closeDetail();
+  if (e.target.closest('input, textarea, select, dialog')) return;
+  if (e.key === '/') { e.preventDefault(); return $('#q').focus(); }
+  if (!['ArrowDown', 'ArrowUp'].includes(e.key) || S.view !== 'lista') return;
+  const v = S.visible || []; if (!v.length) return;
+  e.preventDefault();
+  const i = v.findIndex(l => l.id === S.sel);
+  const n = e.key === 'ArrowDown' ? Math.min(v.length - 1, i + 1) : Math.max(0, i - 1);
+  select(v[i < 0 ? 0 : n].id);
+});
+
+const detail = $('#detail');
+detail.addEventListener('click', async e => {
+  const t = e.target.closest('button, a'), l = S.byId.get(S.sel);
+  if (!t || !l) return;
+  const d = t.dataset;
+  if (t.id === 'dClose') return closeDetail();
+  if (t.id === 'openCfg2') { e.preventDefault(); return openSettings(); }
+  if (d.set) return d.set !== l.status && patch({ status: d.set });
+  if (d.act) return nextAction(d.act);
+  if (d.temp) return patch({ temperature: l.temperature === d.temp ? '' : d.temp });
+  if (d.tab) return showTab(d.tab);
+  if (d.days !== undefined) { const v = d.days ? addDays(Number(d.days)) : ''; $('#dfollow').value = v; return patch({ follow_up: v }); }
+  if (d.ch && !t.disabled) { setChannel(d.ch); $('#replyCh').value = d.ch; return; }
+  if (d.q !== undefined) return useQuick(Number(d.q));
+  if (t.id === 'openWa2') return openWa();
+  if (t.id === 'presCheck') return checkNow();
+  if (d.link) {
+    if (d.link === 'reject' && !confirm('Este link não é deste lead? Ele some daqui e não volta nas próximas verificações.')) return;
+    return linkAction(d.link, d.url);
+  }
+  if (t.id === 'presAdd') { const u = $('#presUrl').value.trim(); if (!u) return toast('Cole o link primeiro.'); return linkAction('add', u); }
+  if (t.id === 'copyMsg') { try { await navigator.clipboard.writeText($('#composer').hidden ? $('#tplPrev')?.textContent || '' : $('#composer').value); toast('Mensagem copiada ✓'); } catch { toast('Não consegui copiar.'); } return; }
+  if (t.id === 'sendMsg') return sendCurrent();
+  if (t.id === 'saveReply') {
+    const text = $('#replyText').value.trim();
+    if (!text) return toast('Cole a resposta do lead primeiro.');
+    try {
+      await logMessage('in', $('#replyCh').value, text);
+      $('#replyText').value = ''; $('#replyBox').open = false;
+      toast('Resposta registrada ✓ Agora responda com uma resposta pronta.');
+      $('#composer').focus();
+    } catch (err) { fail(err); }
+    return;
+  }
+  if (d.del) {
+    if (!confirm('Apagar esta mensagem do histórico?')) return;
+    try {
+      await api('DELETE', `/api/messages/${d.del}`);
+      S.msgs = S.msgs.filter(m => m.id !== Number(d.del));
+      const fresh = (await api('GET', '/api/leads')).find(x => x.id === l.id);
+      if (fresh) refreshLead(upsert(fresh));
+      renderTimeline(); updateTabCount();
+    } catch (err) { fail(err); }
+  }
+});
+detail.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'dfollow') patch({ follow_up: t.value });
+  else if (t.id === 'tplSel') { S.tplSel = t.value; setChannel('whatsapp'); }
+  else if (t.id === 'presOverride') patch({ presence_override: t.value });
+  else if (t.dataset.src !== undefined) setTemplateSource(Number(t.dataset.src), t.value);
+});
+detail.addEventListener('input', e => {
+  if (e.target.dataset.val !== undefined) return updatePreview();
+  if (e.target.id === 'composer') saveDraftSoon();
+  else if (e.target.id === 'dnotes') saveNotesSoon();
+});
+
+$('#settingsBody').addEventListener('click', e => {
+  if (e.target.id === 'addQr') $('#qrList').insertAdjacentHTML('beforeend', qrHtml({ titulo: '', texto: '' }));
+  const rm = e.target.closest('[data-rmqr]'); if (rm) rm.closest('.qr').remove();
+});
+$('#resetCfg').addEventListener('click', () => {
+  if (!confirm('Voltar todos os modelos para o padrão? Seu nome e empresa são mantidos.')) return;
+  const c = structuredClone(DEFAULTS); c.perfil = { nome: $('#cfgNome').value.trim(), empresa: $('#cfgEmpresa').value.trim() };
+  renderSettings(c);
+});
+$('#saveCfg').addEventListener('click', async () => {
+  try { await saveCfg(readSettings(), 'Modelos salvos ✓'); $('#settings').close(); } catch (e) { fail(e); }
+});
+$('#wSave').addEventListener('click', async () => {
+  const cfg = structuredClone(S.cfg);
+  cfg.onboarded = true;
+  cfg.perfil = { nome: $('#wNome').value.trim(), empresa: $('#wEmpresa').value.trim() };
+  try { await saveCfg(cfg, cfg.perfil.nome ? `Prazer, ${cfg.perfil.nome}! Bora vender 🚀` : 'Tudo pronto!'); $('#welcome').close(); } catch (e) { fail(e); }
+});
+$('#wSkip').addEventListener('click', async () => {
+  const cfg = structuredClone(S.cfg); cfg.onboarded = true;
+  try { await saveCfg(cfg); } catch {}
+  $('#welcome').close();
+});
+addEventListener('resize', moveThumb);
+addEventListener('focus', () => { S.unread = 0; setTitle(); });
+$('#waBtn').addEventListener('click', openWa);
+$('#presBtn').addEventListener('click', openPres);
+$('#presClose').addEventListener('click', () => $('#presDlg').close());
+$('#presBody').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'presStart' || b.id === 'presAll') {
+    if (b.id === 'presAll' && !confirm('Verificar de novo todos os leads sem site próprio? Seus ajustes manuais são mantidos.')) return;
+    b.disabled = true;
+    try { await api('POST', '/api/presence/start', { all: b.id === 'presAll' }); } catch (err) { toast(err.message); }
+  } else if (b.id === 'presStop') { await api('POST', '/api/presence/stop').catch(fail); toast('Parando depois do lead atual…'); }
+  refreshPres();
+});
+$('#waClose').addEventListener('click', () => $('#waDlg').close());
+$('#waBody').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.watab) { S.waTab = b.dataset.watab; return renderWaDlg(); }
+  if (b.id === 'webLogout') {
+    if (!confirm('Desconectar o WhatsApp do CRM? Para usar de novo, escaneie um novo QR code.')) return;
+    b.disabled = true;
+    try { await api('POST', '/api/wa/web/logout'); S.wa.web = { ...S.wa.web, status: 'starting' }; toast('WhatsApp desconectado.'); }
+    catch (err) { toast('Não consegui desconectar: ' + err.message); }
+    return renderWaDlg();
+  }
+  if (b.dataset.copy !== undefined) {
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copiado ✓'); } catch { toast('Não consegui copiar.'); }
+    return;
+  }
+  if (b.id === 'waSave') {
+    b.disabled = true; b.textContent = 'Testando…';
+    let info;
+    try {
+      S.wa.cfg = await api('PUT', '/api/wa/config', { token: $('#waToken').value, app_secret: $('#waSecret').value,
+        phone_number_id: $('#waPhone').value, waba_id: $('#waWaba').value, api_version: $('#waVer').value });
+      info = await api('POST', '/api/wa/test');
+      toast('✓ WhatsApp conectado: ' + (info.display_phone_number || ''));
+    } catch (err) { toast('Não conectou: ' + err.message); }
+    await loadWa(); renderWaDlg(info);
+    if (S.sel) setChannel(S.channel);
+    return;
+  }
+  if (b.id === 'tplRefresh') { await loadWa(); $('#tplList').innerHTML = tplListHtml(); return; }
+  if (b.id === 'tplCreate') {
+    b.disabled = true; b.textContent = 'Enviando…';
+    try {
+      const bad = (await api('POST', '/api/wa/templates/suggested')).filter(x => !x.ok);
+      toast(bad.length ? 'Alguns modelos falharam: ' + bad.map(x => `${x.name}: ${x.error}`).join(' | ') : '✓ Modelos enviados para aprovação da Meta');
+    } catch (err) { toast('Não criou: ' + err.message); }
+    await loadWa(); renderWaDlg();
+  }
+});
+// the chip rows hide their scrollbar: let a normal mouse wheel scroll them sideways
+$$('.chips, .stages, #detail').forEach(el => el.addEventListener('wheel', e => {
+  const row = e.target.closest('.chips, .stages, .qchips');
+  if (!row || Math.abs(e.deltaY) <= Math.abs(e.deltaX) || row.scrollWidth <= row.clientWidth) return;
+  row.scrollLeft += e.deltaY; e.preventDefault();
+}, { passive: false }));
+
+// ── boot ──
+(async function boot() {
+  $('#rows').innerHTML = '<div class="skel"></div>'.repeat(8);
+  moveThumb();
+  try {
+    const [leads, cfg] = await Promise.all([api('GET', '/api/leads'), api('GET', '/api/settings')]);
+    S.cfg = mergeCfg(Object.keys(cfg).length ? cfg : null);
+    leads.forEach(upsert);
+    renderMain();
+    if (!leads.length) $('#rows').innerHTML = '<div class="empty"><div class="big">📥</div>Nenhum lead ainda.<br>Clique em <b>Importar</b> e escolha o CSV gerado pela skill.</div>';
+    const m = location.hash.match(/lead=(\d+)/);
+    if (m && S.byId.has(Number(m[1]))) select(Number(m[1]));
+    if (!S.cfg.onboarded) setTimeout(() => $('#welcome').showModal(), 350);
+    await loadWa();
+    if (S.sel) setChannel(S.channel);
+    poll(); setInterval(poll, 4000);
+    refreshPres();
+  } catch (e) {
+    $('#rows').innerHTML = '<div class="empty"><div class="big">🔌</div>Não consegui falar com o servidor do CRM.<br>Abra pelo <b>abrir-crm.bat</b> (não abra o arquivo HTML direto).</div>';
+  }
+})();
+</script>
+</body>
+</html>

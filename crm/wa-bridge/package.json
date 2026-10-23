@@ -1,0 +1,13 @@
+{
+  "name": "crm-wa-bridge",
+  "private": true,
+  "description": "Connects the local CRM to WhatsApp Web (unofficial, via whatsapp-web.js).",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4",
+    "whatsapp-web.js": "1.34.7"
+  }
+}

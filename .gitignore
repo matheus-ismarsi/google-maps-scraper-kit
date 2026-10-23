@@ -16,3 +16,8 @@ __pycache__/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# CRM WhatsApp bridge (dependencies, WhatsApp Web cache; the session itself lives in crm/data/)
+node_modules/
+.wwebjs_cache/
+.wwebjs_auth/
